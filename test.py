@@ -17,8 +17,8 @@ def get_news(message):
 def handle_news(message):
     get_news(message)
 
-@bot.message_handler(commands=['news']) 
-def handle_news(message):
-    get_news(message)
+@bot.message_handler(commands=['start']) 
+def welcome(message):
+    bot.send_message(message.chat.id,'Benvenuto nel bot per info su Ferrovia Circumetnea')
 
 bot.polling()
