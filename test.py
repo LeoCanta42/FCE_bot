@@ -3,7 +3,7 @@ import telebot
 import requests
 import string
 
-token = open('/home/leo/fcebot_token.txt','r')
+token = open('fcebot_token.txt','r')
 BOT_TOKEN = str(token.read())
 
 bot = telebot.TeleBot(BOT_TOKEN.strip())
@@ -17,4 +17,8 @@ def get_news(message):
 def handle_news(message):
     get_news(message)
 
-bot.infinity_polling()
+@bot.message_handler(commands=['news']) 
+def handle_news(message):
+    get_news(message)
+
+bot.polling()
