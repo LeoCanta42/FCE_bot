@@ -1,6 +1,7 @@
 import logging
 from telegram import InlineKeyboardButton,InlineKeyboardMarkup,Update
 from telegram.ext import ApplicationBuilder,ContextTypes,CommandHandler,CallbackQueryHandler
+import retrieve_webdata
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -33,9 +34,8 @@ async def button(message: Update, context: ContextTypes.DEFAULT_TYPE):
     query = message.callback_query
 
     await query.answer()
-
     if(query.data == "1"): 
-        await context.bot.send_message(chat_id=message.effective_chat.id, text="Funziona1")
+        await context.bot.send_message(chat_id=message.effective_chat.id, text=retrieve_webdata.filter_urls(1))
     elif(query.data == "2"):
         await context.bot.send_message(chat_id=message.effective_chat.id, text="Funziona2")
     elif(query.data == "3"):
