@@ -28,14 +28,17 @@ async def buttons(message: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.edit_message_reply_markup(chat_id=message.effective_chat.id, message_id=message.effective_message.id, reply_markup=general_markup())
 
     elif(query.data == "1"):
+        await context.bot.delete_message(chat_id=message.effective_chat.id, message_id=message.effective_message.id) #elimino vecchia lista opzioni
         for i in getdownload_urls(2): 
-            await context.bot.send_message(chat_id=message.effective_chat.id, text=i)
-        await welcome(message,context)
+            await context.bot.send_message(chat_id=message.effective_chat.id, text=i) #invio orari
+        await welcome(message,context) #rimetto lista opzioni
     elif(query.data == "2"):
+        await context.bot.delete_message(chat_id=message.effective_chat.id, message_id=message.effective_message.id)
         for i in getdownload_urls(1): 
             await context.bot.send_message(chat_id=message.effective_chat.id, text=i)
         await welcome(message,context)
     elif(query.data == "3"):
+        await context.bot.delete_message(chat_id=message.effective_chat.id, message_id=message.effective_message.id)
         for i in getdownload_urls(0): 
             await context.bot.send_message(chat_id=message.effective_chat.id, text=i)
         await welcome(message,context)
