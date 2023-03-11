@@ -9,7 +9,7 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-def add_handlers():
+def add_handlers(): #defining handlers
     handlers = [
         CommandHandler('start',welcome),
         CommandHandler('help',help),
