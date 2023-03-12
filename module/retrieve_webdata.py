@@ -33,12 +33,13 @@ def getdownload_urls(type: int):
     if(type==2): return autolinee_urls
     #prendo url in base alla tipologia passata
 
-'''
-def download_package(n: int):
-    with open('orario.pdf', 'wb') as f:
-        tmpurl=filter_urls(n)
-        for i in tmpurl:
-            response = requests.get(i)
+def download_package(n: int,s: str): #puo' essere generalizzato specificando anche la tipologia e poter scaricare qualsiasi tipo di file
+    tmpurl=getdownload_urls(n)
+    j=0
+    for i in tmpurl:
+        response = requests.get(i)
+        with open(s+str(j)+".pdf", 'wb') as f:
             f.write(response.content)
-'''
+        j+=1
+
 #download_package(2)
