@@ -1,0 +1,5 @@
+requests==2.25.1
+bs4==0.0.1
+tabula-py==2.7.0
+python-telegram-bot==20.1
+
