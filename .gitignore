@@ -1,9 +1,3 @@
-*.txt
-*.pdf
+.txt
+.pdf
 __pycache__/
-module/__pycache/
-module/timetables_operations/__pycache__/
-module/*.txt
-module/*.pdf
-module/timetables_operations/*.txt
-module/timetables_operations/*.pdf
