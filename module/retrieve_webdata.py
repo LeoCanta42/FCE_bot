@@ -1,7 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 
-def getdownload_urls(type: int):
+def getdownload_urls(type_transport: int):
     url='https://www.circumetnea.it/le-nostre-linee/'
 
     strpage=(requests.get(url)).text
@@ -28,17 +28,17 @@ def getdownload_urls(type: int):
             elif(n==2): autolinee_urls.append((finder.find('a')).get('href'))
     
     #[0] metro, [1] ferrovia, [2] autolinee
-    if(type==0): return metro_urls
-    if(type==1): return ferrovia_urls
-    if(type==2): return autolinee_urls
+    if(type_transport==0): return metro_urls
+    if(type_transport==1): return ferrovia_urls
+    if(type_transport==2): return autolinee_urls
     #prendo url in base alla tipologia passata
 
-def download_package(n: int,s: str): #puo' essere generalizzato specificando anche la tipologia e poter scaricare qualsiasi tipo di file
-    tmpurl=getdownload_urls(n)
+def download_package(type_transport: int,file_name: str): #puo' essere generalizzato specificando anche la tipologia e poter scaricare qualsiasi tipo di file
+    tmpurl=getdownload_urls(type_transport)
     j=0
     for i in tmpurl:
         response = requests.get(i)
-        with open(s+str(j)+".pdf", 'wb') as f:
+        with open(file_name+str(j)+".pdf", 'wb') as f:
             f.write(response.content)
         j+=1
 
