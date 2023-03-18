@@ -1,104 +1,26 @@
-#import tabula
-import glob
 from datetime import datetime,timedelta
-from extract_excel import extract
+from module.timetables_operations.extract_excel import extract,dimensions,all_replacing
+from module.timetables_operations.times_op import isTimeFormat,isTimeFormatH,format_time
 
-file="./module/timetables_operations/locations.txt"
-pdf="./module/timetables_operations/bus_orario0.pdf"
-
-def isTimeFormat(input:str):
-    try:
-        datetime.strptime(input, "%H.%M")
-        return True
-    except:
-        return False
-def isTimeFormatH(input:str):
-    try:
-        datetime.strptime(input, "%H")
-        return True
-    except:
-        return False
-'''
-def find_files():
-    list_files=glob.glob("./module/timetables_operations/matrice_orari*.txt")
-    return list_files
-
-def extract_pdftable_tomatrix_txt(s:str):
-    table=tabula.read_pdf(s, pages='all', stream=True) #prima tabella , per seconda uso[1]  
-    
-    #cols=table.shape[1]
-    ntable=0
-    for t in table:
-        rows=t.shape[0] 
-        with open("./module/timetables_operations/matrice_orari"+str(ntable)+".txt","w") as f:
-            for i in range(rows):
-                row=t.iloc[i:i+1,:].values #prendo la prima riga della tabella
-                for j in row[0]: #[0] perche' vede anche una riga come una matrice di una sola riga                
-                    f.write(str(j)+",")  
-                f.write("\n")
-        ntable+=1
-    #DA SISTEMARE IL FATTO CHE ALCUNI ORARI VENGONO MESSI DOPO \n ANCHE SE DEVONO ESSERE DI UNA SOLA RIGA
-'''    
-
-def find_lines(a:str,b:str,time:str): #a punto di partenza, b punto di arrivo
-    '''
-    list_files=find_files()
-    count=0 #mi indica il file che sto considerando
-    
-
-    for file in list_files:
-        
-        matrix=[]
-        rows=0
-
-    #lettura da file per costruire matrice
-        with open(str(file),"r") as f: #conto le righe
-            for i in f.readlines():
-                rows+=1
-    
-        matrix=[[] for i in range(rows)] #inizializzo matrice
-        with open(str(file),"r") as f:
-            #leggo riga per riga con separatore, fisso i e scorro j
-            for i in range(rows):
-                line=f.readline()
-                #extract element j
-                splitted=line.split(",")
-                for j in splitted:
-                    matrix[i].append(j)
-        
-        cols=len(matrix[1][:])
-    '''
+def find_lines(a:str,b:str,time:str,tipo:str): #a punto di partenza, b punto di arrivo
     dep_time=datetime.strptime(time,"%H.%M")
     line_string=[]
-    matrix=extract()
+    matrix=extract(tipo)
     for table in range(2): #2 perche' ci sono 2 tabelle nel file excel
-        count_table=0
-        start=0
-        rows=0
-        h=True
-        for i in range(len(matrix)):
-            if str(matrix[i][0])=="CATANIA (S.Sofia)":
-                count_table+=1
-            if count_table==1 and table==0 and h:
-                start=i
-                h=False
-            elif count_table==2 and table==0 and h==False:
-                rows=i+1
-                h=True
-            elif count_table==3 and table==1 and h:
-                start=i 
-                h=False
-            elif count_table==4 and table==1 and h==False:
-                rows=i+1
+        
+        start=dimensions(matrix,table)[0]
+        rows=dimensions(matrix,table)[1]
         cols=len(matrix[start])
 
     #operazioni per trovare indici partenza e destinazione
         partenza=0
         destinazione=0
         for i,j in zip(range(start,rows),range(start,rows)): 
-            if(str(matrix[i][0])==a):
+            #dato che ci sono anche stesse fermate con piccole differenze, metto maiuscole e tolgo spazi
+            if partenza!=0 and destinazione!=0 and destinazione>partenza: break
+            if(all_replacing(str(matrix[i][0]))==all_replacing(a)): 
                 partenza=i
-            elif(j>partenza and partenza!=0 and str(matrix[j][0])==b):
+            elif(j>partenza and partenza!=0 and all_replacing(str(matrix[j][0]))==all_replacing(b)):
                 destinazione=j        
     #operazioni per trovare linee valide nel tempo entro mezzora da quello indicato
         line=[]
@@ -112,36 +34,39 @@ def find_lines(a:str,b:str,time:str): #a punto di partenza, b punto di arrivo
                         cur_time_considered=datetime.strptime(str(matrix[partenza][i]),"%H.%M")
                     else:
                         cur_time_considered=datetime.strptime(str(matrix[partenza][i]),"%H")
-                    interval=30 #minuti
+                    interval=59 #minuti
         
-                    if cur_time_considered>=(dep_time-timedelta(minutes=interval)) and cur_time_considered<=(dep_time+timedelta(minutes=interval)):
+                    #if cur_time_considered>=(dep_time-timedelta(minutes=interval)) and cur_time_considered<=(dep_time+timedelta(minutes=interval)): #intervallo prima di 30 min e dopo 30 min
+                    if cur_time_considered>=(dep_time) and cur_time_considered<=(dep_time+timedelta(minutes=interval)): #intervallo con orario x fino alle x.59
                         if isTimeFormat(str(matrix[destinazione][i])) or isTimeFormatH(str(matrix[destinazione][i])) :
                             line.append(i)
+                    elif cur_time_considered>(dep_time+timedelta(minutes=interval)): #i successivi saranno tutti > posso fermarmi
+                        break
         #salvo le stringhe delle linee valide per quel file                            
         
         line_string.append(table)
         line_string[table]=[]
         for l in line:
             if isinstance(l,int): # mi assicuro che sia un indice e quindi intero
-                line_string[table].append(str(matrix[2][l])+"\n"+str(matrix[partenza][0])+": "+str(matrix[partenza][l])+"\n"+str(matrix[destinazione][0])+": "+str(matrix[destinazione][l]))
+                s_to_append=matrix[start-2][l]+"\n"+matrix[partenza][0]+": "+format_time(str(matrix[partenza][l]))+"\n"+matrix[destinazione][0]+": "+format_time(str(matrix[destinazione][l]))
+                line_string[table].append(str(s_to_append))
     
-        
-    
+    final=""
     h=False
     for c in range(2): #stesso motivo di prima di table (2 tabelle)
         if len(line_string[c])!=0:
             for line in line_string[c]:            
                 if h==False:
-                    print("Linea esistente")
-                print("\n"+line)
+                    final+="Linea esistente"
+                final+=str("\n\n"+line)
                 h=True
     
     if h==False:
-        print("Linea non esistente")
+        final="Linea non esistente"
 
+    return final
     #'''
     
 
-find_lines("BIANCAVILLA","PATERNO' Staz. FCE","20.00")
-#extract_pdftable_tomatrix_txt(pdf)
+#print(find_lines("CATANIA SSofia","Biancavilla","13.00"))
 #find_files()

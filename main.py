@@ -8,10 +8,11 @@ def main():
     
     bot.add_handlers(add_handlers())
     
-    #aggiungere download orari ogni tot aggiornati, una volta in modo che si possono usare o inviare direttamente quelli
+    #aggiungere download orari ogni tot aggiornati, una volta in modo che si possono usare quelli
+    '''
     download_package(2,"./module/timetables_operations/bus_orario")
     download_package(1,"./module/timetables_operations/littorina_orario")
-
+    '''
     bot.run_polling()
 
 if __name__ == '__main__':
