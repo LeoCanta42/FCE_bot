@@ -121,4 +121,3 @@ def locations_to_file(s:str):
 
 
 #locations_to_file("bus")
-
