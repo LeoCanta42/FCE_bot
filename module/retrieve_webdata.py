@@ -20,7 +20,6 @@ def getdownload_urls(type_transport: int):
         elif(n==2): x=autolinee
 
         tmp_packages=[line for line in x.splitlines() if 'class="package-title"' in line]
-        #creo un dizionario in cui inserisco la chiave che indica la tipologia e il valore sono tutti gli url collegati a quella tipologia(pdf da scaricare)
         for i in range(len(tmp_packages)):
             finder=BeautifulSoup(tmp_packages[i],'html.parser')
             if(n==0): metro_urls.append((finder.find('a')).get('href'))
@@ -42,4 +41,3 @@ def download_package(type_transport: int,file_name: str): #puo' essere generaliz
             f.write(response.content)
         j+=1
 
-#download_package(2)

@@ -1,6 +1,6 @@
-#from retrieve_webdata import getdownload_urls
 from telegram import InlineKeyboardButton,InlineKeyboardMarkup
 
+path="./module/"
 
 def general_markup():
     keyboard = [
@@ -44,64 +44,45 @@ def transport_markup():
     markup=InlineKeyboardMarkup(keyboard)
     return markup
 
-def index_t_b():
-    index_train=0
-    c=0
-    for stop in open("./module/timetables_operations/locations.txt"): 
-        if stop=="TR\n":
-            index_train=c
-        c+=1
-    
-    arr=[index_train,c] 
-    return arr
-
 def bus_markup():
     
-    index=index_t_b()    
-    count_loc=index[0]-1 #numero di fermate bus (indice TR-1)
-
-    keyboard = [[] for i in range(count_loc+1)]
-    step=1
+    step=2 #numero di colonne
+    keyboard = []
+  
     i=0
     stop_counter=0
-    c=0
-    for stop in open("./module/timetables_operations/locations.txt","r"): 
-        if c<=count_loc:
-            if(stop_counter>=step): 
-                stop_counter=0
-                i+=1
-            stop=stop.replace('\n','')
-            keyboard[i].append((InlineKeyboardButton(str(stop),callback_data=str(stop))))
-            stop_counter+=1
-        if c>count_loc:
-            break
-        c+=1
-    keyboard[i].append(InlineKeyboardButton("<-- Back   ",callback_data="choose_T"))
+    keyboard.append([])
+    for stop in open(path+"timetables_operations/bus/locations.txt","r"): 
+        if(stop_counter>=step): 
+            keyboard.append([])
+            stop_counter=0
+            i+=1
+        stop=stop.replace('\n','')
+        keyboard[i].append((InlineKeyboardButton(str(stop),callback_data=str(stop))))
+        stop_counter+=1
 
+    keyboard[i].append(InlineKeyboardButton("<-- Back   ",callback_data="choose_T"))
     markup = InlineKeyboardMarkup(keyboard)
     return markup
 
 def tr_markup():
     
-    index=index_t_b()    
-    count_loc=index[1]-1 #da tr a totale
-
-    keyboard = [[] for i in range(count_loc-index[0]+1)]
-    step=1
+    step=2 #numero di colonne
+    keyboard = []
+    
     i=0
     stop_counter=0
-    c=0
-    for stop in open("./module/timetables_operations/locations.txt","r"): 
-        if c>index[0] and c<=count_loc:
-            if(stop_counter>=step): 
-                stop_counter=0
-                i+=1
-            stop=stop.replace('\n','')
-            keyboard[i].append((InlineKeyboardButton(str(stop),callback_data=str(stop))))
-            stop_counter+=1
-        if c>count_loc:
-            break
-        c+=1
+    keyboard.append([])
+    for stop in open(path+"timetables_operations/littorina/locations.txt","r"): 
+        if(stop_counter>=step): 
+            keyboard.append([])
+            stop_counter=0
+            i+=1
+        stop=stop.replace('\n','')
+        keyboard[i].append((InlineKeyboardButton(str(stop),callback_data=str(stop))))
+        stop_counter+=1
+
     keyboard[i].append(InlineKeyboardButton("<-- Back   ",callback_data="choose_T"))
     markup = InlineKeyboardMarkup(keyboard)
     return markup
+

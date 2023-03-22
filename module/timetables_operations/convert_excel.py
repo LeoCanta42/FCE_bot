@@ -1,6 +1,7 @@
 import cloudconvert
+path="./module/timetables_operations/"
 
-api_key=(str(open("./module/timetables_operations/api_token_cloudconvert.txt","r").read())).replace('\n','')
+api_key=(str(open(path+"api_token_cloudconvert.txt","r").read())).replace('\n','')
 cloudconvert.configure(api_key=api_key)
 
 def download_converted(url:str,nome_file:str):
@@ -19,7 +20,7 @@ def download_converted(url:str,nome_file:str):
                     "import-my-file"
                 ],
                 "non_table_content": False,
-                "single_sheet": True
+                "single_sheet": False
             },
             "export-my-file": {
                 "operation": "export/url",
