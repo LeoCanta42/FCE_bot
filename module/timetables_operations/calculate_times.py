@@ -31,22 +31,23 @@ def find_lines(a:str,b:str,time:str,tipo:str): #a punto di partenza, b punto di 
             line=[]
             if partenza!=0 and destinazione>partenza:
                 for i in range(1,cols):
-                    type_time=0 #perche' posso avere ore.minuti o solo ore
-                    if(isTimeFormat(str(matrix[partenza][i]))): type_time=1
-                    elif (isTimeFormatH(str(matrix[partenza][i]))): type_time=2
-                    if(type_time!=0):
-                        if(type_time==1):
-                            cur_time_considered=datetime.strptime(str(matrix[partenza][i]),"%H.%M")
-                        else:
-                            cur_time_considered=datetime.strptime(str(matrix[partenza][i]),"%H")
-                        interval=59 #minuti
-            
-                        #if cur_time_considered>=(dep_time-timedelta(minutes=interval)) and cur_time_considered<=(dep_time+timedelta(minutes=interval)): #intervallo prima di 30 min e dopo 30 min
-                        if cur_time_considered>=(dep_time) and cur_time_considered<=(dep_time+timedelta(minutes=interval)): #intervallo con orario x fino alle x.59
-                            if isTimeFormat(str(matrix[destinazione][i])) or isTimeFormatH(str(matrix[destinazione][i])) :
-                                line.append(i)
-                        elif cur_time_considered>(dep_time+timedelta(minutes=interval)): #i successivi saranno tutti > posso fermarmi
-                            break
+                    #if str(matrix[start-2][i]).upper().replace('.','').replace('TR','LITTORINA')==tipo.upper(): #se voglio che faccia questa cosa solo se sono bus, non treni
+                        type_time=0 #perche' posso avere ore.minuti o solo ore
+                        if(isTimeFormat(str(matrix[partenza][i]))): type_time=1
+                        elif (isTimeFormatH(str(matrix[partenza][i]))): type_time=2
+                        if(type_time!=0):
+                            if(type_time==1):
+                                cur_time_considered=datetime.strptime(str(matrix[partenza][i]),"%H.%M")
+                            else:
+                                cur_time_considered=datetime.strptime(str(matrix[partenza][i]),"%H")
+                            interval=59 #minuti
+                
+                            #if cur_time_considered>=(dep_time-timedelta(minutes=interval)) and cur_time_considered<=(dep_time+timedelta(minutes=interval)): #intervallo prima di 30 min e dopo 30 min
+                            if cur_time_considered>=(dep_time) and cur_time_considered<=(dep_time+timedelta(minutes=interval)): #intervallo con orario x fino alle x.59
+                                if isTimeFormat(str(matrix[destinazione][i])) or isTimeFormatH(str(matrix[destinazione][i])) :
+                                    line.append(i)
+                            elif cur_time_considered>(dep_time+timedelta(minutes=interval)): #i successivi saranno tutti > posso fermarmi
+                                break
             #salvo le stringhe delle linee valide per quel file                            
             
             for l in line:

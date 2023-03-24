@@ -48,14 +48,12 @@ async def buttons(message: Update, context: ContextTypes.DEFAULT_TYPE):
    
     elif(query.data == "choose_T"):
         context.chat_data['counter']=1
-        await context.bot.edit_message_text(chat_id=message.effective_chat.id,message_id=message.effective_message.id, text="Scegli a che ora controllare")
-        await context.bot.edit_message_reply_markup(chat_id=message.effective_chat.id, message_id=message.effective_message.id, reply_markup=times_markup())
+        await context.bot.edit_message_text(chat_id=message.effective_chat.id,message_id=message.effective_message.id, text="Scegli a che ora controllare", reply_markup=times_markup(),disable_web_page_preview=True)
    
     elif(context.chat_data['counter']==1):
         context.chat_data['counter']=2
         context.chat_data['ora']=query.data
-        await context.bot.edit_message_text(chat_id=message.effective_chat.id,message_id=message.effective_message.id, text="Scegli tipologia trasporto")
-        await context.bot.edit_message_reply_markup(chat_id=message.effective_chat.id, message_id=message.effective_message.id, reply_markup=transport_markup())
+        await context.bot.edit_message_text(chat_id=message.effective_chat.id,message_id=message.effective_message.id, text="Scegli tipologia trasporto",reply_markup=transport_markup(),disable_web_page_preview=True)
    
     elif(context.chat_data['counter']==2):
         context.chat_data['counter']=3

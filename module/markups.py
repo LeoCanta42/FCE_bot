@@ -60,8 +60,9 @@ def bus_markup():
         stop=stop.replace('\n','')
         keyboard[i].append((InlineKeyboardButton(str(stop),callback_data=str(stop))))
         stop_counter+=1
-
-    keyboard[i].append(InlineKeyboardButton("<-- Back   ",callback_data="choose_T"))
+    
+    keyboard.append([])
+    keyboard[i+1].append(InlineKeyboardButton("<-- Back   ",callback_data="choose_T"))
     markup = InlineKeyboardMarkup(keyboard)
     return markup
 
@@ -82,7 +83,8 @@ def tr_markup():
         keyboard[i].append((InlineKeyboardButton(str(stop),callback_data=str(stop))))
         stop_counter+=1
 
-    keyboard[i].append(InlineKeyboardButton("<-- Back   ",callback_data="choose_T"))
+    keyboard.append([])
+    keyboard[i+1].append(InlineKeyboardButton("<-- Back   ",callback_data="choose_T"))
     markup = InlineKeyboardMarkup(keyboard)
     return markup
 

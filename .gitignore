@@ -1,5 +1,3 @@
 *.txt
-*.pdf
-*.xlsx
-venv/
+.vscode/
 __pycache__/

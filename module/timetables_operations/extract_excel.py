@@ -66,7 +66,7 @@ def locations_to_file(tipo:str):
         start=dim1[0]
         toadd.append(str(matrix[start][0]))
         different_loc.append(str(matrix[start][0]))
-        for i in range(start+1,dim1[1]):
+        for i in range(start+1,dim1[1]-3): #alla fine c'e' un campo LEGENDA che occupa circa 3 spazi
             h=True
             for element in toadd:
                 if all_replacing(str(matrix[i][0]))==all_replacing(str(element)): #se l'elemento della matrice che sto controllato esiste gia' , non deve fare nulla
