@@ -1,7 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 
-def getdownload_urls(type_transport: int):
+async def getdownload_urls(type_transport: int):
     url='https://www.circumetnea.it/le-nostre-linee/'
 
     strpage=(requests.get(url)).text
@@ -32,8 +32,8 @@ def getdownload_urls(type_transport: int):
     if(type_transport==2): return autolinee_urls
     #prendo url in base alla tipologia passata
 
-def download_package(type_transport: int,file_name: str): #puo' essere generalizzato specificando anche la tipologia e poter scaricare qualsiasi tipo di file
-    tmpurl=getdownload_urls(type_transport)
+async def download_package(type_transport: int,file_name: str): #puo' essere generalizzato specificando anche la tipologia e poter scaricare qualsiasi tipo di file
+    tmpurl=await getdownload_urls(type_transport)
     j=0
     for i in tmpurl:
         response = requests.get(i)

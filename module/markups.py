@@ -2,7 +2,7 @@ from telegram import InlineKeyboardButton,InlineKeyboardMarkup
 
 path="./module/"
 
-def general_markup():
+async def general_markup():
     keyboard = [
         [InlineKeyboardButton("Orario bus", callback_data="1"),
         InlineKeyboardButton("Orario treni", callback_data="2")],
@@ -12,7 +12,7 @@ def general_markup():
     markup = InlineKeyboardMarkup(keyboard)
     return markup
 
-def times_markup():
+async def times_markup():
     keyboard = [
         [InlineKeyboardButton("5.00", callback_data="5.00"),
         InlineKeyboardButton("6.00", callback_data="6.00")],
@@ -35,7 +35,7 @@ def times_markup():
     markup = InlineKeyboardMarkup(keyboard)
     return markup
 
-def transport_markup():
+async def transport_markup():
     keyboard = [
         [InlineKeyboardButton("BUS", callback_data="bus"),
         InlineKeyboardButton("LITTORINA", callback_data="littorina")],
@@ -44,7 +44,7 @@ def transport_markup():
     markup=InlineKeyboardMarkup(keyboard)
     return markup
 
-def bus_markup():
+async def bus_markup():
     
     step=2 #numero di colonne
     keyboard = []
@@ -66,7 +66,7 @@ def bus_markup():
     markup = InlineKeyboardMarkup(keyboard)
     return markup
 
-def tr_markup():
+async def tr_markup():
     
     step=2 #numero di colonne
     keyboard = []

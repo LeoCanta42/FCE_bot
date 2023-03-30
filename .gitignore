@@ -1,3 +1,4 @@
 *.txt
+*.xslx
 .vscode/
 __pycache__/

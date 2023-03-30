@@ -1,6 +1,9 @@
 from openpyxl import load_workbook
+import openpyxl
 from module.timetables_operations.times_op import isTimeFormat,isTimeFormatH
 import os
+import asyncio
+
 path="./module/timetables_operations/"
 
 def find_files(tipo:str):
@@ -16,8 +19,23 @@ def find_files(tipo:str):
     return arr
 
 
-def extract(fname:str,tipo:str):
-    workbook = load_workbook(filename=path+tipo+'/'+fname)
+bus_workbooks=[]
+train_workbooks=[]
+
+def load(tipo:str):
+    for fname in find_files(tipo):
+        if tipo=="bus":
+            bus_workbooks.append(load_workbook(filename=path+tipo+'/'+fname))
+        elif tipo=="littorina":
+            train_workbooks.append(load_workbook(filename=path+tipo+'/'+fname))
+
+async def extract(tipo:str,work_index:int):
+    workbook=openpyxl.Workbook
+    if tipo=="bus":
+        workbook=bus_workbooks[work_index]
+        
+    elif tipo=="littorina":
+        workbook=train_workbooks[work_index]
 
     matrix=[]
     n=0
@@ -39,7 +57,7 @@ def extract(fname:str,tipo:str):
     
     return matrix #array di matrici
 
-def dimensions(matr):
+async def dimensions(matr):
     rows=len(matr)
     start=0
     for i in range(rows):
@@ -49,18 +67,18 @@ def dimensions(matr):
     dim=[start,rows]
     return dim
 
-def all_replacing(s:str):
+async def all_replacing(s:str):
     s=s.upper().replace(' ','').replace("P.ZZA","PIAZZA").replace("Ù","U'").replace("'",'').replace('°','').replace('.','').replace('(','').replace(')','').replace('METRO','')
     return s
 
 
 def locations_to_file(tipo:str):
-    file_to_check=find_files(tipo)
+    file_to_check=asyncio.run(find_files(tipo))
     different_loc=[]
     for file in file_to_check:
-        m_table=extract(file,tipo)
+        m_table=asyncio.run(extract(file,tipo))
         for matrix in m_table:
-            dim1=dimensions(matrix)
+            dim1=asyncio.run(dimensions(matrix))
 
         toadd=[]
         start=dim1[0]
@@ -69,14 +87,14 @@ def locations_to_file(tipo:str):
         for i in range(start+1,dim1[1]-3): #alla fine c'e' un campo LEGENDA che occupa circa 3 spazi
             h=True
             for element in toadd:
-                if all_replacing(str(matrix[i][0]))==all_replacing(str(element)): #se l'elemento della matrice che sto controllato esiste gia' , non deve fare nulla
+                if asyncio.run(all_replacing(str(matrix[i][0])))==asyncio.run(all_replacing(str(element))): #se l'elemento della matrice che sto controllato esiste gia' , non deve fare nulla
                     h=False
             if h:
                 toadd.append(str(matrix[i][0]))
                 b=False
                 t=False
                 for j in range(len(matrix[i])):
-                    if(isTimeFormat(str(matrix[i][j])) or isTimeFormatH(str(matrix[i][j]))):
+                    if(asyncio.run(isTimeFormat(str(matrix[i][j]))) or asyncio.run(isTimeFormatH(str(matrix[i][j])))):
                         if tipo=="bus" and str(matrix[start-2][j])=="BUS":
                             b=True
                         elif tipo=="littorina" and str(matrix[start-2][j]).replace('.','')=="TR":
