@@ -3,7 +3,7 @@ from telegram import Update
 from telegram.ext import ContextTypes,CommandHandler,CallbackQueryHandler
 from module.retrieve_webdata import getdownload_urls
 from module.markups import general_markup,bus_markup,tr_markup,transport_markup,times_markup
-from module.timetables_operations.calculate_times import find_lines
+from module.timetables_operations.calculate_times import find_lines2
 import threading
 
 logging.basicConfig(
@@ -83,7 +83,8 @@ async def buttons(message: Update, context: ContextTypes.DEFAULT_TYPE):
         context.chat_data['counter']=5
         context.chat_data['arrivo']=query.data
         await context.bot.delete_message(chat_id=message.effective_chat.id, message_id=message.effective_message.id)
-        threading.Thread(target=await find_lines(context,message)).start()
+        #threading.Thread(target=await find_lines(context,message)).start()
+        threading.Thread(target=await find_lines2(context,message)).start() #ricerca linee
         await start(message,context)
 
     elif(query.data in (open("./module/timetables_operations/"+str(context.chat_data['tipo_trasporto'])+"/locations.txt","r")).read()):

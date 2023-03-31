@@ -1,33 +1,31 @@
-from module.check_new_urls import download_after_check
 import telegram
 from mainbot import token as tt
-import asyncio
+import sqlite3 as sql
+import module.timetables_operations.db as db
+from module.timetables_operations.extract_excel import load
+from module.check_new_urls import download_after_check
 
 bot=telegram.Bot(token=tt)
+
+load("bus")
+load("littorina")
 
 def job():
     try:
         download_after_check()
+        return True
     except Exception as e:
         print("Errore durante esecuzione job:\n"+str(e))
+        return False
 
-async def send():
-    chat_ids=set()
-    updates=await bot.get_updates()
-
-    for update in updates:
-        chat_id=update.message.chat.id
-        chat_ids.add(chat_id)
-    
-    text="Bot in pausa, controllo nuovi orari ..."
-    for chat_id in chat_ids:
-        await bot.send_message(chat_id=chat_id,text=text)
 
 if __name__ == '__main__':
-    asyncio.run(send())
-    job()
-
-
+    if job():
+        with sql.connect("fce_lines.db") as connection:
+            db.reset(connection)
+            db.set_db(connection)
+            db.insert_fermate(connection)
+            db.insert_tratte(connection)
 
 '''
 import schedule

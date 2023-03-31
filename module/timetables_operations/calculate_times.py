@@ -4,6 +4,7 @@ from module.timetables_operations.times_op import isTimeFormat,isTimeFormatH,for
 from telegram import Update
 from telegram.ext import ContextTypes
 from module.timetables_operations.extract_excel import bus_workbooks,train_workbooks
+import sqlite3 as sql
 path="./module/timetables_operations/"
 
     
@@ -44,7 +45,7 @@ async def real_elaboration(m_table,dep_time,a,b,context:ContextTypes.DEFAULT_TYP
     ll=[]
     for table in range(len(m_table)):
         matrix=m_table[table]
-        d=await dimensions(matrix)
+        d=dimensions(matrix)
         start=d[0]
         rows=d[1]
         cols=len(matrix[start])
@@ -55,9 +56,9 @@ async def real_elaboration(m_table,dep_time,a,b,context:ContextTypes.DEFAULT_TYP
         for i,j in zip(range(start,rows),range(start,rows)): 
             #dato che ci sono anche stesse fermate con piccole differenze, metto maiuscole e tolgo spazi
             if partenza!=0 and destinazione!=0 and destinazione>partenza: break
-            if(await all_replacing(str(matrix[i][0]))==await all_replacing(a)): 
+            if(all_replacing(str(matrix[i][0]))==all_replacing(a)): 
                 partenza=i
-            elif(j>partenza and partenza!=0 and await all_replacing(str(matrix[j][0]))==await all_replacing(b)):
+            elif(j>partenza and partenza!=0 and all_replacing(str(matrix[j][0]))==all_replacing(b)):
                 destinazione=j        
     #operazioni per trovare linee valide nel tempo entro mezzora da quello indicato
         line=[]
@@ -65,8 +66,8 @@ async def real_elaboration(m_table,dep_time,a,b,context:ContextTypes.DEFAULT_TYP
             for i in range(1,cols):
                 #if str(matrix[start-2][i]).upper().replace('.','').replace('TR','LITTORINA')==tipo.upper(): #se voglio che faccia questa cosa solo se sono bus, non treni
                     type_time=0 #perche' posso avere ore.minuti o solo ore
-                    if(await isTimeFormat(str(matrix[partenza][i]))): type_time=1
-                    elif (await isTimeFormatH(str(matrix[partenza][i]))): type_time=2
+                    if(isTimeFormat(str(matrix[partenza][i]))): type_time=1
+                    elif (isTimeFormatH(str(matrix[partenza][i]))): type_time=2
                     if(type_time!=0):
                         if(type_time==1):
                             cur_time_considered=datetime.strptime(str(matrix[partenza][i]),"%H.%M")
@@ -76,7 +77,7 @@ async def real_elaboration(m_table,dep_time,a,b,context:ContextTypes.DEFAULT_TYP
             
                         #if cur_time_considered>=(dep_time-timedelta(minutes=interval)) and cur_time_considered<=(dep_time+timedelta(minutes=interval)): #intervallo prima di 30 min e dopo 30 min
                         if cur_time_considered>=(dep_time) and cur_time_considered<=(dep_time+timedelta(minutes=interval)): #intervallo con orario x fino alle x.59
-                            if await isTimeFormat(str(matrix[destinazione][i])) or await isTimeFormatH(str(matrix[destinazione][i])) :
+                            if  isTimeFormat(str(matrix[destinazione][i])) or  isTimeFormatH(str(matrix[destinazione][i])) :
                                 line.append(i)
                         elif cur_time_considered>(dep_time+timedelta(minutes=interval)): #i successivi saranno tutti > posso fermarmi
                             break
@@ -84,6 +85,40 @@ async def real_elaboration(m_table,dep_time,a,b,context:ContextTypes.DEFAULT_TYP
         
         for l in line:
             if isinstance(l,int): # mi assicuro che sia un indice e quindi intero
-                s_to_append=matrix[start-2][l]+"\n"+matrix[partenza][0]+": "+await format_time(str(matrix[partenza][l]))+"\n"+matrix[destinazione][0]+": "+await format_time(str(matrix[destinazione][l]))
+                s_to_append=matrix[start-2][l]+"\n"+matrix[partenza][0]+": "+ format_time(str(matrix[partenza][l]))+"\n"+matrix[destinazione][0]+": "+ format_time(str(matrix[destinazione][l]))
                 ll.append(str(s_to_append))
     return ll
+
+
+async def find_lines2(context:ContextTypes.DEFAULT_TYPE,message:Update): #lavora con database
+    a=str(context.chat_data['partenza'])
+    b=str(context.chat_data['arrivo'])
+    
+    tipo=str(context.chat_data['tipo_trasporto'])
+    if tipo=="bus": tipo="BUS"
+    elif tipo=="littorina": tipo="TR"
+
+    time=str(context.chat_data['ora'])
+    dep_time=datetime.strptime(time,"%H.%M")
+    interval=59
+
+    with sql.connect("fce_lines.db") as connection:
+        cursor = connection.cursor()
+        query='''select t1.orario, t2.orario
+                from TratteFermate t1,TratteFermate t2, Fermate as f1,Fermate as f2, Tratte as tr
+                where t1.idTratta=t2.idTratta and t1.idFermata=f1.idFermata and f1.nomereplace=? 
+                and t2.idFermata=f2.idFermata and f2.nomereplace=? and f1.nomereplace!=f2.nomereplace and
+                tr.idTratta=t1.idTratta and tr.Mezzo=? and t2.orario>t1.orario and (strftime('%H.%M',?)-t1.orario)<=0 and (strftime('%H.%M',?)-t1.orario)>=0  '''
+        
+        result=cursor.execute(query,(all_replacing(a),all_replacing(b),tipo,str(dep_time.time()),str((dep_time+timedelta(minutes=interval)).time()),)).fetchall()
+    
+    string="Linea esistente"
+    h=False
+    for i in result:
+        string+="\n\n"+str(tipo)+"\n"+str(a)+": "+str(i[0])+"\n"+str(b)+": "+str(i[1])
+        h=True
+    if not h:
+        string="Linea non esistente"
+    
+    await context.bot.send_message(chat_id=message.effective_chat.id,text=string)
+    
