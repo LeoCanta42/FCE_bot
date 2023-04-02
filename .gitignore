@@ -1,5 +1,5 @@
 *.txt
-*.xslx
+*.xlsx
 .vscode/
 .venv/
 __pycache__/

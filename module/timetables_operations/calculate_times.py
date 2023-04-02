@@ -5,6 +5,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 from module.timetables_operations.extract_excel import bus_workbooks,train_workbooks
 import sqlite3 as sql
+import threading
 path="./module/timetables_operations/"
 
     
@@ -120,5 +121,5 @@ async def find_lines2(context:ContextTypes.DEFAULT_TYPE,message:Update): #lavora
     if not h:
         string="Linea non esistente"
     
-    await context.bot.send_message(chat_id=message.effective_chat.id,text=string)
+    threading.Thread(target=await context.bot.send_message(chat_id=message.effective_chat.id,text=string))
     

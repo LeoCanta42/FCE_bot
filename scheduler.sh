@@ -9,7 +9,7 @@ while true; do
 		PID=$!
 		h=false #se e' gia partito non deve ripartire
 	fi
-	if [ "$(date '+%H:%M')" = "01:00" ]; then	
+	if [ "$(date '+%H:%M')" = "01:00" ]; then #all'1:00 effettuo check di nuovi orari	
 		kill $PID
 		python3.10 bot_pause_messages.py &
 		PID=$!
