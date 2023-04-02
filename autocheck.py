@@ -25,15 +25,3 @@ if __name__ == '__main__':
             db.set_db(connection)
             db.insert_fermate(connection)
             db.insert_tratte(connection)
-
-'''
-import schedule
-import time
-
-def checker():
-   schedule.every(2).days.at("01:00").do(job)
-
-   while True:
-       schedule.run_pending()
-       time.sleep(3000) #circa un'ora
-'''
