@@ -79,7 +79,7 @@ async def buttons(message: Update, context: ContextTypes.DEFAULT_TYPE):
         context.chat_data['counter']=4
         context.chat_data['arrivo']=query.data
         await context.bot.delete_message(chat_id=message.effective_chat.id, message_id=message.effective_message.id)
-        await context.bot.send_message(chat_id=message.effective_chat.id, text="Scegli",reply_markup=await near_time_markup())
+        await context.bot.send_message(chat_id=message.effective_chat.id, text="Scegli tipologia di controllo\n(sceglierai l'ora nel prossimo step)",reply_markup=await near_time_markup())
 
     elif(query.data in (open("./module/timetables_operations/"+str(context.chat_data['tipo_trasporto'])+"/locations.txt","r")).read()):
         if(context.chat_data['counter']==2):
