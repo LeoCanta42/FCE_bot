@@ -7,7 +7,18 @@ async def general_markup():
         [InlineKeyboardButton("Orario bus", callback_data="1"),
         InlineKeyboardButton("Orario treni", callback_data="2")],
         [InlineKeyboardButton("Orario metro", callback_data="3"),
-        InlineKeyboardButton("Controlla orario vicino", callback_data="choose_T")]
+        InlineKeyboardButton("Controlla linea", callback_data="default")]
+    ]
+    markup = InlineKeyboardMarkup(keyboard)
+    return markup
+
+async def near_time_markup():
+    keyboard = [
+        [InlineKeyboardButton("Ora PARTENZA", callback_data="near_partenza"),
+        InlineKeyboardButton("Ora ARRIVO", callback_data="near_arrivo")],
+        [InlineKeyboardButton("Da ORA PARTENZA in POI", callback_data="near_partenza2")],
+        [InlineKeyboardButton("Da PRIMA fino ad ORA ARRIVO", callback_data="near_arrivo2")],
+        [InlineKeyboardButton("<-- Back   ",callback_data="default")]
     ]
     markup = InlineKeyboardMarkup(keyboard)
     return markup
@@ -30,7 +41,7 @@ async def times_markup():
         InlineKeyboardButton("18.00", callback_data="18.00")],
         [InlineKeyboardButton("19.00", callback_data="19.00"),
         InlineKeyboardButton("20.00", callback_data="20.00")],
-        [InlineKeyboardButton("<-- Back   ",callback_data="general")]
+        [InlineKeyboardButton("<-- Back   ",callback_data="default")]
     ]
     markup = InlineKeyboardMarkup(keyboard)
     return markup
@@ -39,7 +50,7 @@ async def transport_markup():
     keyboard = [
         [InlineKeyboardButton("BUS", callback_data="bus"),
         InlineKeyboardButton("LITTORINA", callback_data="littorina")],
-        [InlineKeyboardButton("<-- Back   ",callback_data="choose_T")]
+        [InlineKeyboardButton("<-- Back   ",callback_data="general")]
     ]
     markup=InlineKeyboardMarkup(keyboard)
     return markup
@@ -62,7 +73,7 @@ async def bus_markup():
         stop_counter+=1
     
     keyboard.append([])
-    keyboard[i+1].append(InlineKeyboardButton("<-- Back   ",callback_data="choose_T"))
+    keyboard[i+1].append(InlineKeyboardButton("<-- Back   ",callback_data="default"))
     markup = InlineKeyboardMarkup(keyboard)
     return markup
 
@@ -84,7 +95,7 @@ async def tr_markup():
         stop_counter+=1
 
     keyboard.append([])
-    keyboard[i+1].append(InlineKeyboardButton("<-- Back   ",callback_data="choose_T"))
+    keyboard[i+1].append(InlineKeyboardButton("<-- Back   ",callback_data="default"))
     markup = InlineKeyboardMarkup(keyboard)
     return markup
 

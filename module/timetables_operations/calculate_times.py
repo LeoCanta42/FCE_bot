@@ -1,6 +1,8 @@
 from datetime import datetime,timedelta
-from module.timetables_operations.extract_excel import extract,dimensions,all_replacing
-from module.timetables_operations.times_op import isTimeFormat,isTimeFormatH,format_time
+from module.timetables_operations.extract_excel import all_replacing
+#from module.timetables_operations.extract_excel import extract,dimensions
+#from module.timetables_operations.times_op import isTimeFormat,isTimeFormatH,format_time
+from module.timetables_operations.times_op import format_time
 from telegram import Update
 from telegram.ext import ContextTypes
 from module.timetables_operations.extract_excel import bus_workbooks,train_workbooks
@@ -8,7 +10,67 @@ import sqlite3 as sql
 import threading
 path="./module/timetables_operations/"
 
+#___________________________________--- work with DB
+
+#desiderata ora di partenza
+query_findpartenza='''select t1.orario, t2.orario
+                from TratteFermate t1,TratteFermate t2, Fermate as f1,Fermate as f2, Tratte as tr
+                where t1.idTratta=t2.idTratta and t1.idFermata=f1.idFermata and f1.nomereplace=? 
+                and t2.idFermata=f2.idFermata and f2.nomereplace=? and f1.nomereplace!=f2.nomereplace and
+                tr.idTratta=t1.idTratta and tr.Mezzo=? and t2.orario>t1.orario and (strftime('%H.%M',?)-t1.orario)<=0 and (strftime('%H.%M',?)-t1.orario)>=0  '''
+#desiderata ora di arrivo
+query_finddestinazione='''select t1.orario, t2.orario
+                from TratteFermate t1,TratteFermate t2, Fermate as f1,Fermate as f2, Tratte as tr
+                where t1.idTratta=t2.idTratta and t1.idFermata=f1.idFermata and f1.nomereplace=? 
+                and t2.idFermata=f2.idFermata and f2.nomereplace=? and f1.nomereplace!=f2.nomereplace and
+                tr.idTratta=t1.idTratta and tr.Mezzo=? and t2.orario>t1.orario and (strftime('%H.%M',?)-t2.orario)<=0 and (strftime('%H.%M',?)-t2.orario)>=0  '''
+#da ora desiderata in poi partenza
+query_findpartenza2='''select t1.orario, t2.orario
+                from TratteFermate t1,TratteFermate t2, Fermate as f1,Fermate as f2, Tratte as tr
+                where t1.idTratta=t2.idTratta and t1.idFermata=f1.idFermata and f1.nomereplace=? 
+                and t2.idFermata=f2.idFermata and f2.nomereplace=? and f1.nomereplace!=f2.nomereplace and
+                tr.idTratta=t1.idTratta and tr.Mezzo=? and t2.orario>t1.orario and (strftime('%H.%M',?)-t1.orario)<=0 '''
+#da ora desiderata arrivo o prima
+query_finddestinazione2='''select t1.orario, t2.orario
+                from TratteFermate t1,TratteFermate t2, Fermate as f1,Fermate as f2, Tratte as tr
+                where t1.idTratta=t2.idTratta and t1.idFermata=f1.idFermata and f1.nomereplace=? 
+                and t2.idFermata=f2.idFermata and f2.nomereplace=? and f1.nomereplace!=f2.nomereplace and
+                tr.idTratta=t1.idTratta and tr.Mezzo=? and t2.orario>t1.orario and (strftime('%H.%M',?)-t2.orario)>=0 '''
+
+async def find_lines(context:ContextTypes.DEFAULT_TYPE,message:Update,query:str): 
+    a=str(context.chat_data['partenza'])
+    b=str(context.chat_data['arrivo'])
     
+    tipo=str(context.chat_data['tipo_trasporto'])
+    if tipo=="bus": tipo="BUS"
+    elif tipo=="littorina": tipo="TR"
+
+    time=str(context.chat_data['ora'])
+    dep_time=datetime.strptime(time,"%H.%M")
+    interval=59
+
+    with sql.connect("fce_lines.db") as connection:
+        cursor = connection.cursor()
+        
+        if query==query_findpartenza2 or query==query_finddestinazione2:
+            result=cursor.execute(query,(all_replacing(a),all_replacing(b),tipo,str(dep_time.time()),)).fetchall()
+        else:
+            result=cursor.execute(query,(all_replacing(a),all_replacing(b),tipo,str(dep_time.time()),str((dep_time+timedelta(minutes=interval)).time()),)).fetchall()
+    
+    string="Linea esistente"
+    h=False
+    for i in result:
+        string+="\n\n"+str(tipo)+"\n"+str(a)+": "+format_time(str(i[0]))+"\n"+str(b)+": "+format_time(str(i[1]))
+        h=True
+    if not h:
+        string="Linea non esistente"
+    
+    threading.Thread(target=await context.bot.send_message(chat_id=message.effective_chat.id,text=string))
+    
+
+
+#work without DB ---- uses matrix
+'''
 async def find_lines(context:ContextTypes.DEFAULT_TYPE,message:Update): #a punto di partenza, b punto di arrivo
     a=str(context.chat_data['partenza'])
     b=str(context.chat_data['arrivo'])
@@ -89,37 +151,4 @@ async def real_elaboration(m_table,dep_time,a,b,context:ContextTypes.DEFAULT_TYP
                 s_to_append=matrix[start-2][l]+"\n"+matrix[partenza][0]+": "+ format_time(str(matrix[partenza][l]))+"\n"+matrix[destinazione][0]+": "+ format_time(str(matrix[destinazione][l]))
                 ll.append(str(s_to_append))
     return ll
-
-
-async def find_lines2(context:ContextTypes.DEFAULT_TYPE,message:Update): #lavora con database
-    a=str(context.chat_data['partenza'])
-    b=str(context.chat_data['arrivo'])
-    
-    tipo=str(context.chat_data['tipo_trasporto'])
-    if tipo=="bus": tipo="BUS"
-    elif tipo=="littorina": tipo="TR"
-
-    time=str(context.chat_data['ora'])
-    dep_time=datetime.strptime(time,"%H.%M")
-    interval=59
-
-    with sql.connect("fce_lines.db") as connection:
-        cursor = connection.cursor()
-        query='''select t1.orario, t2.orario
-                from TratteFermate t1,TratteFermate t2, Fermate as f1,Fermate as f2, Tratte as tr
-                where t1.idTratta=t2.idTratta and t1.idFermata=f1.idFermata and f1.nomereplace=? 
-                and t2.idFermata=f2.idFermata and f2.nomereplace=? and f1.nomereplace!=f2.nomereplace and
-                tr.idTratta=t1.idTratta and tr.Mezzo=? and t2.orario>t1.orario and (strftime('%H.%M',?)-t1.orario)<=0 and (strftime('%H.%M',?)-t1.orario)>=0  '''
-        
-        result=cursor.execute(query,(all_replacing(a),all_replacing(b),tipo,str(dep_time.time()),str((dep_time+timedelta(minutes=interval)).time()),)).fetchall()
-    
-    string="Linea esistente"
-    h=False
-    for i in result:
-        string+="\n\n"+str(tipo)+"\n"+str(a)+": "+str(i[0])+"\n"+str(b)+": "+str(i[1])
-        h=True
-    if not h:
-        string="Linea non esistente"
-    
-    threading.Thread(target=await context.bot.send_message(chat_id=message.effective_chat.id,text=string))
-    
+'''    

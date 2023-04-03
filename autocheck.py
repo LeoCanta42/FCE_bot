@@ -9,8 +9,7 @@ bot=telegram.Bot(token=tt)
 
 def job():
     try:
-        download_after_check()
-        return True
+        return download_after_check()
     except Exception as e:
         print("Errore durante esecuzione job:\n"+str(e))
         return False

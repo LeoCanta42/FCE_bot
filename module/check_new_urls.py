@@ -39,4 +39,7 @@ def download_after_check():
                     f.write(str(url)+"\n")
                     i+=1
             locations_to_file(t)
+            return True
+        else:
+            return False
                 

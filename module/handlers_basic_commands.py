@@ -2,8 +2,9 @@ import logging
 from telegram import Update
 from telegram.ext import ContextTypes,CommandHandler,CallbackQueryHandler, MessageHandler
 from module.retrieve_webdata import getdownload_urls
-from module.markups import general_markup,bus_markup,tr_markup,transport_markup,times_markup
-from module.timetables_operations.calculate_times import find_lines2 #,find_lines #NO DB#
+from module.markups import general_markup,bus_markup,tr_markup,transport_markup,times_markup,near_time_markup
+from module.timetables_operations.calculate_times import find_lines
+from module.timetables_operations.calculate_times import query_findpartenza,query_finddestinazione,query_finddestinazione2,query_findpartenza2
 import threading
 
 logging.basicConfig(
@@ -54,25 +55,18 @@ async def buttons(message: Update, context: ContextTypes.DEFAULT_TYPE):
             await context.bot.send_message(chat_id=message.effective_chat.id, text=i)
         await start(message,context)
    
-    elif(query.data == "choose_T"):
+    elif(query.data == "default"):
         context.chat_data['counter']=1
-        await context.bot.edit_message_text(chat_id=message.effective_chat.id,message_id=message.effective_message.id, text="Scegli a che ora controllare", reply_markup=await times_markup(),disable_web_page_preview=True)
+        await context.bot.edit_message_text(chat_id=message.effective_chat.id,message_id=message.effective_message.id, text="Scegli tipologia trasporto",reply_markup=await transport_markup(),disable_web_page_preview=True)
    
     elif context.chat_data=={}: #da qui in poi mi serve questo controllo cosi' da verificare che se la chat_data e' vuota
+        #mi serve da qui perche' prima vuol dire che ho premuto altro o che mi trovo in Tipologia trasporto, quindi mi va bene (e' l'inizio di default)
         #causa riavvio bot o altro, resetto
         await reset(context,message)
 
-    elif(query.data in ["5.00","6.00","7.00","8.00","9.00","10.00","11.00","12.00","13.00","14.00","15.00","16.00","17.00","18.00","19.00","20.00"]):
-        if (context.chat_data['counter']==1):
-            context.chat_data['counter']=2
-            context.chat_data['ora']=query.data
-            await context.bot.edit_message_text(chat_id=message.effective_chat.id,message_id=message.effective_message.id, text="Scegli tipologia trasporto",reply_markup=await transport_markup(),disable_web_page_preview=True)
-        else:
-            await reset(context,message)        
-   
     elif(query.data in ["bus","littorina"]):
-        if(context.chat_data['counter']==2):
-            context.chat_data['counter']=3
+        if(context.chat_data['counter']==1):
+            context.chat_data['counter']=2
             context.chat_data['tipo_trasporto']=query.data
             if context.chat_data['tipo_trasporto']=="bus":
                 await context.bot.edit_message_text(chat_id=message.effective_chat.id,message_id=message.effective_message.id, text="Scegli fermata di _PARTENZA_",reply_markup=await bus_markup(),disable_web_page_preview=True,parse_mode='Markdown')
@@ -81,24 +75,51 @@ async def buttons(message: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             await reset(context,message)
 
-    elif (context.chat_data['counter']==4): #controllo prima che non siamo gia' alla fine perche' l'if sotto verrebbe ripetuto 2 volte
-        context.chat_data['counter']=5
+    elif (context.chat_data['counter']==3): #controllo prima che non siamo gia' alla fine perche' l'if sotto verrebbe ripetuto 2 volte
+        context.chat_data['counter']=4
         context.chat_data['arrivo']=query.data
         await context.bot.delete_message(chat_id=message.effective_chat.id, message_id=message.effective_message.id)
-        #threading.Thread(target=await find_lines(context,message)).start() #NO DB# e commentare riga sotto
-        threading.Thread(target=await find_lines2(context,message)).start() #ricerca linee
-        #await start(message,context)
+        await context.bot.send_message(chat_id=message.effective_chat.id, text="Scegli",reply_markup=await near_time_markup())
 
     elif(query.data in (open("./module/timetables_operations/"+str(context.chat_data['tipo_trasporto'])+"/locations.txt","r")).read()):
-        if(context.chat_data['counter']==3):
-            context.chat_data['counter']=4
+        if(context.chat_data['counter']==2):
+            context.chat_data['counter']=3
             context.chat_data['partenza']=query.data
+            await context.bot.delete_message(chat_id=message.effective_chat.id, message_id=message.effective_message.id)
             if context.chat_data['tipo_trasporto']=="bus":
-                await context.bot.edit_message_text(chat_id=message.effective_chat.id,message_id=message.effective_message.id, text="Scegli fermata di _ARRIVO_",reply_markup=await bus_markup(),disable_web_page_preview=True,parse_mode='Markdown')
+                await context.bot.send_message(chat_id=message.effective_chat.id, text="Scegli fermata di _ARRIVO_",reply_markup=await bus_markup(),disable_web_page_preview=True,parse_mode='Markdown')
             elif context.chat_data['tipo_trasporto']=="littorina":
-                await context.bot.edit_message_text(chat_id=message.effective_chat.id,message_id=message.effective_message.id, text="Scegli fermata di _ARRIVO_",reply_markup=await tr_markup(),disable_web_page_preview=True,parse_mode='Markdown')
+                await context.bot.send_message(chat_id=message.effective_chat.id, text="Scegli fermata di _ARRIVO_",reply_markup=await tr_markup(),disable_web_page_preview=True,parse_mode='Markdown')
         else:
             await reset(context,message)
+
+    elif(query.data == "near_partenza" or query.data == "near_arrivo" or query.data == "near_partenza2" or query.data == "near_arrivo2"):
+        if (context.chat_data['counter']==4):
+            context.chat_data['counter']=5
+            context.chat_data['near_function']=query.data
+            await context.bot.edit_message_text(chat_id=message.effective_chat.id,message_id=message.effective_message.id, text="Scegli a che ora controllare",reply_markup=await times_markup(),disable_web_page_preview=True)
+        else:
+            await reset(context,message)        
+    
+    elif(query.data in ["5.00","6.00","7.00","8.00","9.00","10.00","11.00","12.00","13.00","14.00","15.00","16.00","17.00","18.00","19.00","20.00"]):
+        if (context.chat_data['counter']==5):
+            context.chat_data['counter']=6
+            context.chat_data['ora']=query.data
+            await context.bot.delete_message(chat_id=message.effective_chat.id, message_id=message.effective_message.id)
+            if context.chat_data['near_function']=='near_partenza':
+                query=query_findpartenza
+            elif context.chat_data['near_function']=='near_arrivo':
+                query=query_finddestinazione
+            elif context.chat_data['near_function']=='near_partenza2':
+                query=query_findpartenza2
+            elif context.chat_data['near_function']=='near_arrivo2':
+                query=query_finddestinazione2
+
+            threading.Thread(target=await find_lines(context,message,query)).start() #ricerca linee
+            #await start(message,context)
+        else:
+            await reset(context,message)        
+
 
 async def contributors(message: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=message.effective_chat.id,text=
@@ -125,14 +146,14 @@ Orario bus: invio link pdf orario bus
 Orario treni: invio link pdf orario littorine
 Orario metro: invio link pdf orario metro 
 
-Controlla orario vicino: mostra le linee disponibili scegliendo la tipologia di mezzo(bus/littorina), le fermate di partenza e arrivo e l'ora. Verranno restituite tutte le linee corrispondenti nel range di quell'ora (ad esempio se si seleziona 8.00 fara' vedere, se esistono, tutte le linee nel range dalle 8.00 alle 8.59) """)
+Controlla orario vicino: mostra le linee disponibili scegliendo la tipologia di mezzo(bus/littorina), le fermate di partenza e arrivo, la tipologia di ricerca di effettuare ovvero cercare l'ora desiderata di partenza o di arrivo.\nVerranno restituite tutte le linee corrispondenti nel range di quell'ora (ad esempio se si seleziona 8.00 fara' vedere, se esistono, tutte le linee nel range dalle 8.00 alle 8.59) """)
 
 async def scraping_messages(message: Update, context: ContextTypes.DEFAULT_TYPE):
     if message.message.text not in ["/start","/help","/contributors"]:
         await context.bot.delete_message(chat_id=message.effective_chat.id,message_id=message.effective_message.id)
     if message.message.text == "/start":
         
-        if 'counter' in context.chat_data and context.chat_data['counter']>=0 and context.chat_data['counter']<=4 and context.chat_data['start_count']<2: 
+        if 'counter' in context.chat_data and context.chat_data['counter']>=0 and context.chat_data['counter']<=4 and ('start_count' in context.chat_data) and context.chat_data['start_count']<2: 
             #verifico che ci sia solo uno start in esecuzione e per essere tale deve essere almeno 0 (chiamata a start)
             #e minore di 4 perche' quando termina la ricerca counter=5. nonostante non si debba poter fare, in caso di problemi
             #se viene chiamato 2 volte start, viene data una nuova istanza
