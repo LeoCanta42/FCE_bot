@@ -52,7 +52,9 @@ async def find_lines(context:ContextTypes.DEFAULT_TYPE,message:Update,query:str)
     with sql.connect("fce_lines.db") as connection:
         cursor = connection.cursor()
         
-        if query==query_findpartenza2 or query==query_finddestinazione2:
+        if query==query_finddestinazione2:
+            result=cursor.execute(query,(all_replacing(a),all_replacing(b),tipo,str((dep_time+timedelta(minutes=interval)).time()),)).fetchall()
+        elif query==query_findpartenza2:
             result=cursor.execute(query,(all_replacing(a),all_replacing(b),tipo,str(dep_time.time()),)).fetchall()
         else:
             result=cursor.execute(query,(all_replacing(a),all_replacing(b),tipo,str(dep_time.time()),str((dep_time+timedelta(minutes=interval)).time()),)).fetchall()

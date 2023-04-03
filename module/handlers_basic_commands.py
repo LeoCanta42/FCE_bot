@@ -146,7 +146,13 @@ Orario bus: invio link pdf orario bus
 Orario treni: invio link pdf orario littorine
 Orario metro: invio link pdf orario metro 
 
-Controlla orario vicino: mostra le linee disponibili scegliendo la tipologia di mezzo(bus/littorina), le fermate di partenza e arrivo, la tipologia di ricerca di effettuare ovvero cercare l'ora desiderata di partenza o di arrivo.\nVerranno restituite tutte le linee corrispondenti nel range di quell'ora (ad esempio se si seleziona 8.00 fara' vedere, se esistono, tutte le linee nel range dalle 8.00 alle 8.59) """)
+Controlla orario vicino: mostra le linee disponibili scegliendo la tipologia di mezzo(bus/littorina), le fermate di partenza e arrivo, la tipologia di ricerca linee ovvero:
+Linee con PARTENZA vicino l'ora scelta - permette di avere tutte le linee in cui la partenza e' nel range di quell'ora scelta 
+Linee con ARRIVO vicino l'ora scelta - permette di avere tutte le linee in cui l'arrivo e' nel range di quell'ora scelta
+Tutte le linee dall'ora di PARTENZA scelta in poi - permette di avere tutte le linee in cui la partenza e' nel range da quell'ora scelta in poi
+Tutte le linee da prima all'ora di ARRIVO scelta - permette di avere tutte le linee in cui l'ora di arrivo e' prima o nello stesso range di quella scelta
+
+Esempio di range: se scelgo le 8.00 intendiamo come range fino alle 8.59""")
 
 async def scraping_messages(message: Update, context: ContextTypes.DEFAULT_TYPE):
     if message.message.text not in ["/start","/help","/contributors"]:

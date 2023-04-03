@@ -14,10 +14,10 @@ async def general_markup():
 
 async def near_time_markup():
     keyboard = [
-        [InlineKeyboardButton("Partenza vicino ora scelta", callback_data="near_partenza")],
-        [InlineKeyboardButton("Arrivo vicino ora scelta", callback_data="near_arrivo")],
-        [InlineKeyboardButton("Tutte le partenza da ora scelta in poi", callback_data="near_partenza2")],
-        [InlineKeyboardButton("Tutti gli arrivi da prima dell'ora scelta", callback_data="near_arrivo2")],
+        [InlineKeyboardButton("Linee con PARTENZA vicino l'ora scelta", callback_data="near_partenza")],
+        [InlineKeyboardButton("Linee con ARRIVO vicino l'ora scelta", callback_data="near_arrivo")],
+        [InlineKeyboardButton("Tutte le linee dall'ora di PARTENZA scelta in poi", callback_data="near_partenza2")],
+        [InlineKeyboardButton("Tutte le linee da prima all'ora di ARRIVO scelta", callback_data="near_arrivo2")],
         [InlineKeyboardButton("<-- Back   ",callback_data="default")]
     ]
     markup = InlineKeyboardMarkup(keyboard)
