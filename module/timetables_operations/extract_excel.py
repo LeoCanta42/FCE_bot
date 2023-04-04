@@ -68,7 +68,8 @@ def dimensions(matr): #ritorna array con indice di partenza e righe
     return dim
 
 def all_replacing(s:str):
-    s=s.upper().replace(' ','').replace("P.ZZA","PIAZZA").replace("Ù","U'").replace("'",'').replace('°','').replace('.','').replace('(','').replace(')','').replace('METRO','')
+    if s!=None:
+        s=s.upper().replace(' ','').replace("P.ZZA","PIAZZA").replace("Ù","U'").replace("'",'').replace('°','').replace('.','').replace('(','').replace(')','').replace('METRO','')
     return s
 
 
