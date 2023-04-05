@@ -2,7 +2,7 @@ from telegram import InlineKeyboardButton,InlineKeyboardMarkup
 
 path="./module/"
 
-async def general_markup():
+async def general_markup() -> InlineKeyboardMarkup:
     keyboard = [
         [InlineKeyboardButton("Orario bus", callback_data="1"),
         InlineKeyboardButton("Orario treni", callback_data="2")],
@@ -12,7 +12,7 @@ async def general_markup():
     markup = InlineKeyboardMarkup(keyboard)
     return markup
 
-async def near_time_markup():
+async def near_time_markup() -> InlineKeyboardMarkup:
     keyboard = [
         [InlineKeyboardButton("Linee con PARTENZA vicino l'ora scelta", callback_data="near_partenza")],
         [InlineKeyboardButton("Linee con ARRIVO vicino l'ora scelta", callback_data="near_arrivo")],
@@ -23,7 +23,7 @@ async def near_time_markup():
     markup = InlineKeyboardMarkup(keyboard)
     return markup
 
-async def times_markup():
+async def times_markup() -> InlineKeyboardMarkup:
     keyboard = [
         [InlineKeyboardButton("5.00", callback_data="5.00"),
         InlineKeyboardButton("6.00", callback_data="6.00")],
@@ -46,7 +46,7 @@ async def times_markup():
     markup = InlineKeyboardMarkup(keyboard)
     return markup
 
-async def transport_markup():
+async def transport_markup() -> InlineKeyboardMarkup:
     keyboard = [
         [InlineKeyboardButton("BUS", callback_data="bus"),
         InlineKeyboardButton("LITTORINA", callback_data="littorina")],
@@ -55,7 +55,7 @@ async def transport_markup():
     markup=InlineKeyboardMarkup(keyboard)
     return markup
 
-async def bus_markup():
+async def bus_markup() -> InlineKeyboardMarkup:
     
     step=2 #numero di colonne
     keyboard = []
@@ -77,7 +77,7 @@ async def bus_markup():
     markup = InlineKeyboardMarkup(keyboard)
     return markup
 
-async def tr_markup():
+async def tr_markup() -> InlineKeyboardMarkup:
     
     step=2 #numero di colonne
     keyboard = []

@@ -4,7 +4,7 @@ path="./module/timetables_operations/"
 api_key=(str(open(path+"api_token_cloudconvert.txt","r").read())).replace('\n','')
 cloudconvert.configure(api_key=api_key)
 
-def download_converted(url:str,nome_file:str):
+def download_converted(url:str,nome_file:str) -> None:
     job = cloudconvert.Job.create(payload={
         "tasks": {
             "import-my-file": {

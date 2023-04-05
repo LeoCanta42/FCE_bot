@@ -4,7 +4,7 @@ from module.timetables_operations.extract_excel import locations_to_file
 import shutil,os
 import asyncio
 
-def check(type:int): #1 littorina 2 bus
+def check(type:int) -> bool: #1 littorina 2 bus
     h=True
     for oldurl in open("./module/urls"+str(type)+".txt","r"):
         if oldurl not in asyncio.run(getdownload_urls(type)):
@@ -15,7 +15,7 @@ def check(type:int): #1 littorina 2 bus
     
     return h
 
-def clean_folders(type:int):
+def clean_folders(type:int) -> None:
     if type==1:
         shutil.rmtree("./module/timetables_operations/littorina")
         os.mkdir("./module/timetables_operations/littorina")
@@ -24,7 +24,7 @@ def clean_folders(type:int):
         os.mkdir("./module/timetables_operations/bus")
 
 
-def download_after_check():
+def download_after_check() -> bool:
     for type in range(1,3):
         if(check(type)):
             clean_folders(type)

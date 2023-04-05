@@ -2,19 +2,19 @@ from module.timetables_operations.extract_excel import bus_workbooks,train_workb
 from module.timetables_operations.times_op import isTimeFormat,isTimeFormatH,format_time
 import asyncio
 
-def set_db(connection):
+def set_db(connection) -> None:
     cursor=connection.cursor()
     cursor.execute("create table Tratte(idTratta INTEGER PRIMARY KEY AUTOINCREMENT,CodiceTratta TEXT, Mezzo TEXT)")
     cursor.execute("create table Fermate(idFermata INTEGER PRIMARY KEY AUTOINCREMENT, Nome TEXT,nomereplace TEXT,bus BOOL, littorina BOOL)")
     cursor.execute("create table TratteFermate(id INTEGER PRIMARY KEY AUTOINCREMENT, orario TIME, idFermata INTEGER, idTratta INTEGER, foreign key (idFermata) references Fermate(idFermata),foreign key (idTratta) references Tratte(idTratta))")
 
-def reset(connection):
+def reset(connection) -> None:
     cursor=connection.cursor()
     cursor.execute("drop table Tratte")
     cursor.execute("drop table Fermate")
     cursor.execute("drop table TratteFermate")
 
-def insert_fermate(connection):
+def insert_fermate(connection) -> None:
     cursor=connection.cursor()
     file=open("./module/timetables_operations/bus/locations.txt","r")
     bus_loc=file.readlines()
@@ -34,7 +34,7 @@ def insert_fermate(connection):
             cursor.execute("insert into Fermate(Nome,littorina,bus,nomereplace) values(?,1,0,?)",(train_loc[i],str(all_replacing(str(train_loc[i]))),))
 
 
-def insert_tratte(connection): #tratte e collegamento fermata-tratta
+def insert_tratte(connection) -> None: #tratte e collegamento fermata-tratta
     cursor=connection.cursor()
     tipologia=["bus","littorina"]
     for tipo in tipologia:

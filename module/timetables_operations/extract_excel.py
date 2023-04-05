@@ -6,7 +6,7 @@ import asyncio
 
 path="./module/timetables_operations/"
 
-def find_files(tipo:str):
+def find_files(tipo:str) -> list:
     arr=[]
     if (tipo=="bus"):
         arr=os.listdir(path+"bus/")
@@ -22,14 +22,14 @@ def find_files(tipo:str):
 bus_workbooks=[]
 train_workbooks=[]
 
-def load(tipo:str):
+def load(tipo:str) -> None:
     for fname in find_files(tipo):
         if tipo=="bus":
             bus_workbooks.append(load_workbook(filename=path+tipo+'/'+fname))
         elif tipo=="littorina":
             train_workbooks.append(load_workbook(filename=path+tipo+'/'+fname))
 
-async def extract(tipo:str,work_index:int):
+async def extract(tipo:str,work_index:int) -> list:
     workbook=openpyxl.Workbook
     if tipo=="bus":
         workbook=bus_workbooks[work_index]
@@ -57,7 +57,7 @@ async def extract(tipo:str,work_index:int):
     
     return matrix #array di matrici
 
-def dimensions(matr): #ritorna array con indice di partenza e righe
+def dimensions(matr) -> list: #ritorna array con indice di partenza e righe
     rows=len(matr)
     start=0
     for i in range(rows):
@@ -73,7 +73,7 @@ def all_replacing(s:str):
     return s
 
 
-def locations_to_file(tipo:str):
+def locations_to_file(tipo:str) -> None:
     different_loc=[]
     toadd=[]
     if tipo=="bus": workbooks=bus_workbooks

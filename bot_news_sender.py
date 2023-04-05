@@ -13,7 +13,7 @@ bot=Bot(token=token)
 
 channel_chat_id=str(open("./module/news_check/channel_id.txt","r").read()).strip()
 
-def sender(bot:Bot,chat):
+def sender(bot:Bot,chat:str) -> None:
     inviare=check_news()
     if inviare:
         for news in inviare:

@@ -3,13 +3,13 @@ from bs4 import BeautifulSoup
 
 path="./module/news_check/"
 
-def indexes(page):
+def indexes(page) -> list:
     arr=[]
     arr.append(page.text.find('class="entry-title"')) #inizio info news
     arr.append(page.text.find('class="page-numbers')) #fine info news
     return arr
 
-def download_page():
+def download_page() -> None:
     #scarico pagina e salvo in un file
     page=requests.get("https://www.circumetnea.it/category/news/")
     ind=indexes(page)
@@ -17,7 +17,7 @@ def download_page():
     with open(path+"updated_news.html","w") as f:
         f.write(page)
 
-def scraping_news(soup:BeautifulSoup): #ritorna una matrice
+def scraping_news(soup:BeautifulSoup) -> list: #ritorna una matrice
     # [i][j] i=indice notizia | j=[0,1,2]=titolo,descrizione,link
     notizie=[]
     i=0
@@ -54,7 +54,7 @@ def scraping_news(soup:BeautifulSoup): #ritorna una matrice
     return notizie
 
 
-def check_news():
+def check_news() -> list:
     #faccio get della pagina e confronto con quella scaricata 
     #(se ci sono news sostituisco vecchia pagina con questa)
     #cerco news, invio agli utenti/canale

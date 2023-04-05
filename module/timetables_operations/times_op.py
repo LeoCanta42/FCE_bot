@@ -1,19 +1,19 @@
 from datetime import datetime
 
-def isTimeFormat(input:str):
+def isTimeFormat(input:str) -> bool:
     try:
         datetime.strptime(input, "%H.%M")
         return True
     except:
         return False
-def isTimeFormatH(input:str):
+def isTimeFormatH(input:str) -> bool:
     try:
         datetime.strptime(input, "%H")
         return True
     except:
         return False
 
-def format_time(t:str):
+def format_time(t:str) -> str:
     splitted_time=t.split('.')
     #es: 8.5 viene interpretato come 08.05 quindi  mi separo in [8,5]
     # se il secondo e' di lunghezza 1 aggiungo 0 per fare 50 e poi unisco

@@ -37,7 +37,30 @@ query_finddestinazione2='''select t1.orario, t2.orario
                 and t2.idFermata=f2.idFermata and f2.nomereplace=? and f1.nomereplace!=f2.nomereplace and
                 tr.idTratta=t1.idTratta and tr.Mezzo=? and t2.orario>t1.orario and (strftime('%H.%M',?)-t2.orario)>=0 '''
 
-async def find_lines(context:ContextTypes.DEFAULT_TYPE,message:Update,query:str): 
+'''
+query_testing=""" select f.Nome,tr.orario,t.CodiceTratta
+                from Fermate f, Tratte t, TratteFermate tr
+                where tr.idFermata=f.idFermata and tr.idTratta=t.idTratta and t.Mezzo='BUS'
+                order by t.idTratta """
+
+def find_lines2(): 
+    with sql.connect("fce_lines.db") as connection:
+        cursor = connection.cursor() 
+        result=cursor.execute(query_testing).fetchall()   
+    
+    cur_tr=result[0][2]
+    h=True
+    for i in result:
+        if i[2]!=cur_tr:
+            cur_tr=i[2]
+            print('\n')
+        if i[2]=='1' and h:
+            print("Da qui inizia seconda tabella")
+            h=False
+        print(str(i))
+'''   #serve per vedere tutte le linee in ordine per colonne
+
+async def find_lines(context:ContextTypes.DEFAULT_TYPE,message:Update,query:str) -> None: 
     a=str(context.chat_data['partenza'])
     b=str(context.chat_data['arrivo'])
     
@@ -73,7 +96,7 @@ async def find_lines(context:ContextTypes.DEFAULT_TYPE,message:Update,query:str)
 
 #work without DB ---- uses matrix
 '''
-async def find_lines(context:ContextTypes.DEFAULT_TYPE,message:Update): #a punto di partenza, b punto di arrivo
+async def find_lines(context:ContextTypes.DEFAULT_TYPE,message:Update) -> None: #a punto di partenza, b punto di arrivo
     a=str(context.chat_data['partenza'])
     b=str(context.chat_data['arrivo'])
     time=str(context.chat_data['ora'])
@@ -106,7 +129,7 @@ async def find_lines(context:ContextTypes.DEFAULT_TYPE,message:Update): #a punto
 
     await context.bot.send_message(chat_id=message.effective_chat.id, text=final)
             
-async def real_elaboration(m_table,dep_time,a,b,context:ContextTypes.DEFAULT_TYPE,message:Update):
+async def real_elaboration(m_table,dep_time,a,b,context:ContextTypes.DEFAULT_TYPE,message:Update) -> list:
     ll=[]
     for table in range(len(m_table)):
         matrix=m_table[table]

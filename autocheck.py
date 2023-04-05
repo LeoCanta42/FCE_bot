@@ -7,7 +7,7 @@ from module.check_new_urls import download_after_check
 
 bot=telegram.Bot(token=tt)
 
-def job():
+def job() -> bool:
     try:
         return download_after_check()
     except Exception as e:
