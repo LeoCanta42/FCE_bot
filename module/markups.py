@@ -41,6 +41,7 @@ async def times_markup() -> InlineKeyboardMarkup:
         InlineKeyboardButton("18.00", callback_data="18.00")],
         [InlineKeyboardButton("19.00", callback_data="19.00"),
         InlineKeyboardButton("20.00", callback_data="20.00")],
+        [InlineKeyboardButton("21.00", callback_data="21.00")],
         [InlineKeyboardButton("<-- Back   ",callback_data="default")]
     ]
     markup = InlineKeyboardMarkup(keyboard)

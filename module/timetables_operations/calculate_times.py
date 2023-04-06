@@ -17,25 +17,29 @@ query_findpartenza='''select t1.orario, t2.orario
                 from TratteFermate t1,TratteFermate t2, Fermate as f1,Fermate as f2, Tratte as tr
                 where t1.idTratta=t2.idTratta and t1.idFermata=f1.idFermata and f1.nomereplace=? 
                 and t2.idFermata=f2.idFermata and f2.nomereplace=? and f1.nomereplace!=f2.nomereplace and
-                tr.idTratta=t1.idTratta and tr.Mezzo=? and t2.orario>t1.orario and (strftime('%H.%M',?)-t1.orario)<=0 and (strftime('%H.%M',?)-t1.orario)>=0  '''
+                tr.idTratta=t1.idTratta and tr.Mezzo=? and t2.orario>t1.orario and (strftime('%H.%M',?)-t1.orario)<=0 and (strftime('%H.%M',?)-t1.orario)>=0
+                order by t1.orario'''
 #desiderata ora di arrivo
 query_finddestinazione='''select t1.orario, t2.orario
                 from TratteFermate t1,TratteFermate t2, Fermate as f1,Fermate as f2, Tratte as tr
                 where t1.idTratta=t2.idTratta and t1.idFermata=f1.idFermata and f1.nomereplace=? 
                 and t2.idFermata=f2.idFermata and f2.nomereplace=? and f1.nomereplace!=f2.nomereplace and
-                tr.idTratta=t1.idTratta and tr.Mezzo=? and t2.orario>t1.orario and (strftime('%H.%M',?)-t2.orario)<=0 and (strftime('%H.%M',?)-t2.orario)>=0  '''
+                tr.idTratta=t1.idTratta and tr.Mezzo=? and t2.orario>t1.orario and (strftime('%H.%M',?)-t2.orario)<=0 and (strftime('%H.%M',?)-t2.orario)>=0
+                order by t1.orario'''
 #da ora desiderata in poi partenza
 query_findpartenza2='''select t1.orario, t2.orario
                 from TratteFermate t1,TratteFermate t2, Fermate as f1,Fermate as f2, Tratte as tr
                 where t1.idTratta=t2.idTratta and t1.idFermata=f1.idFermata and f1.nomereplace=? 
                 and t2.idFermata=f2.idFermata and f2.nomereplace=? and f1.nomereplace!=f2.nomereplace and
-                tr.idTratta=t1.idTratta and tr.Mezzo=? and t2.orario>t1.orario and (strftime('%H.%M',?)-t1.orario)<=0 '''
+                tr.idTratta=t1.idTratta and tr.Mezzo=? and t2.orario>t1.orario and (strftime('%H.%M',?)-t1.orario)<=0
+                order by t1.orario'''
 #da ora desiderata arrivo o prima
 query_finddestinazione2='''select t1.orario, t2.orario
                 from TratteFermate t1,TratteFermate t2, Fermate as f1,Fermate as f2, Tratte as tr
                 where t1.idTratta=t2.idTratta and t1.idFermata=f1.idFermata and f1.nomereplace=? 
                 and t2.idFermata=f2.idFermata and f2.nomereplace=? and f1.nomereplace!=f2.nomereplace and
-                tr.idTratta=t1.idTratta and tr.Mezzo=? and t2.orario>t1.orario and (strftime('%H.%M',?)-t2.orario)>=0 '''
+                tr.idTratta=t1.idTratta and tr.Mezzo=? and t2.orario>t1.orario and (strftime('%H.%M',?)-t2.orario)>=0
+                order by t1.orario'''
 
 '''
 query_testing=""" select f.Nome,tr.orario,t.CodiceTratta
