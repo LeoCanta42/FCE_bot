@@ -1,6 +1,26 @@
 from module.timetables_operations.extract_excel import bus_workbooks,train_workbooks,extract,dimensions,all_replacing
 from module.timetables_operations.times_op import isTimeFormat,isTimeFormatH,format_time
+import datetime
 import asyncio
+
+def set_db_users(connection) -> None:
+    cursor=connection.cursor()
+    cursor.execute("create table Users(userid TEXT PRIMARY KEY, chatid TEXT, username TEXT, current_use TIMESTAMP)")
+
+# def select_db_users(connection) -> None:
+#     cursor=connection.cursor()
+#     result=cursor.execute("select * from Users").fetchall()
+#     print(result)
+
+def insert_db_user(connection,userid:str,chatid:str,username:str) -> None:
+    time=datetime.datetime.now()
+    cursor=connection.cursor()
+    check_exist=cursor.execute("select * from Users where userid=?",(userid,)).fetchall()
+    #print(str(userid)+" "+str(chatid)+" "+str(username)+" "+str(time))
+    if len(check_exist)<=0: #lo fa solo se non esiste gia'
+        cursor.execute("insert into Users(userid,chatid,username,current_use) values(?,?,?,?)",(userid,chatid,username,time))
+    elif len(check_exist)>0:
+        cursor.execute("update Users set current_use=? where userid=?",(time,userid,))
 
 def set_db(connection) -> None:
     cursor=connection.cursor()
