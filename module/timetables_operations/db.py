@@ -7,12 +7,15 @@ def set_db_users(connection) -> None:
     cursor=connection.cursor()
     cursor.execute("create table Users(userid TEXT PRIMARY KEY, chatid TEXT, username TEXT, current_use TIMESTAMP)")
 
-# def select_db_users(connection) -> None:
-#     cursor=connection.cursor()
-#     result=cursor.execute("select * from Users").fetchall()
-#     print(result)
+def select_db_users(connection) -> list:
+    cursor=connection.cursor()
+    result=cursor.execute("select * from Users").fetchall()
+    string=""
+    for i in result:
+        string+=str(i)+"\n"
+    return string
 
-def insert_db_user(connection,userid:str,chatid:str,username:str) -> None:
+async def insert_db_user(connection,userid:str,chatid:str,username:str) -> None:
     time=datetime.datetime.now()
     cursor=connection.cursor()
     check_exist=cursor.execute("select * from Users where userid=?",(userid,)).fetchall()

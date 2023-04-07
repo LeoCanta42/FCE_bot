@@ -6,7 +6,7 @@ from module.markups import general_markup,bus_markup,tr_markup,transport_markup,
 from module.timetables_operations.calculate_times import find_lines
 from module.timetables_operations.calculate_times import query_findpartenza,query_finddestinazione,query_finddestinazione2,query_findpartenza2
 
-from module.timetables_operations.db import insert_db_user
+from module.timetables_operations.db import insert_db_user,select_db_users
 import sqlite3 as sql
 import threading
 
@@ -18,6 +18,7 @@ logging.basicConfig(
 def add_handlers(): #defining handlers
     handlers = [
         #CommandHandler('start',welcome),
+        CommandHandler('see_user',see_user),
         CommandHandler('help',help),
         CommandHandler('contributors',contributors),
         CallbackQueryHandler(buttons),
@@ -163,7 +164,7 @@ async def scraping_messages(message: Update, context: ContextTypes.DEFAULT_TYPE)
     if message.message.text == "/start":
         
         with sql.connect("users.db") as connection:
-            insert_db_user(connection,message.effective_user.id,message.effective_chat.id,message.effective_user.username)
+            await insert_db_user(connection,message.effective_user.id,message.effective_chat.id,message.effective_user.username)
         
         if 'counter' in context.chat_data and context.chat_data['counter']>=0 and context.chat_data['counter']<=4 and ('start_count' in context.chat_data) and context.chat_data['start_count']<2: 
             #verifico che ci sia solo uno start in esecuzione e per essere tale deve essere almeno 0 (chiamata a start)
@@ -175,3 +176,8 @@ async def scraping_messages(message: Update, context: ContextTypes.DEFAULT_TYPE)
         else :
             context.chat_data['start_count']=0
             await welcome(message,context)
+
+async def see_user(message: Update, context: ContextTypes.DEFAULT_TYPE):
+    if str(message.effective_user.id)==(open("my_userid.txt","r").read()).strip():
+        with sql.connect("users.db") as connection:
+            await context.bot.send_message(message.effective_chat.id,text=str(select_db_users(connection)))
