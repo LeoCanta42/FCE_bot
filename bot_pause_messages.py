@@ -10,8 +10,16 @@ def add_handlers() -> list: #defining handlers
     return handlers
 
 async def pause(message:Update,context:ContextTypes.DEFAULT_TYPE) -> None:
+    if 'count' not in context.chat_data:
+        context.chat_data['count']=0
+    else:
+        context.chat_data['count']+=1
     await context.bot.delete_message(chat_id=message.effective_chat.id,message_id=message.effective_message.id)
-    await context.bot.send_message(chat_id=message.effective_chat.id,text="Bot in pausa ...\ncontrollo nuovi orari/manutenzione")
+    if context.chat_data['count']<2: #considero fino a 2 messaggi inviati
+        await context.bot.send_message(chat_id=message.effective_chat.id,text="Bot in pausa ...\ncontrollo nuovi orari/manutenzione")
+    elif context.chat_data['count']>10:
+        context.chat_data['count']=0
+
 
 app = ApplicationBuilder().token(tt).build()
 app.add_handlers(add_handlers())

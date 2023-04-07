@@ -12,7 +12,7 @@ def select_db_users(connection) -> list:
     result=cursor.execute("select * from Users").fetchall()
     string=""
     for i in result:
-        string+=str(i)+"\n"
+        string+=str(i)+"\n\n"
     return string
 
 async def insert_db_user(connection,userid:str,chatid:str,username:str) -> None:
