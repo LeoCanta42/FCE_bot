@@ -1,11 +1,11 @@
-from telegram.ext import ApplicationBuilder,MessageHandler,ContextTypes
+from telegram.ext import ApplicationBuilder,MessageHandler,ContextTypes,CallbackQueryHandler
 from telegram import Update
 from mainbot import token as tt
 
 def add_handlers() -> list: #defining handlers
     handlers = [
-        MessageHandler(filters=None,callback=pause)
-        
+        MessageHandler(filters=None,callback=pause),
+        CallbackQueryHandler(pause)
     ]
     return handlers
 
