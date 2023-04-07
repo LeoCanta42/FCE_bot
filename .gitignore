@@ -1,6 +1,10 @@
 *.txt
 *.xlsx
 *.html
+*.real
+*.out
+*.db
+private/
 .vscode/
 .venv/
 __pycache__/

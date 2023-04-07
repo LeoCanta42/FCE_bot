@@ -4,7 +4,7 @@ import schedule
 import time
 import asyncio
 
-token=str(open("news_fcebot_token.txt","r").read()).strip()
+token=str(open("./module/private/news_fcebot_token.txt","r").read()).strip()
 bot=Bot(token=token)
 
 #per ottenere chat id

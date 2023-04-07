@@ -78,7 +78,7 @@ def check_news() -> list:
                     h=True
                     break #posso fermarmi, non devo considerarla
             if not h:
-                stringa=str(nuove[i][0])+"\n"+str(nuove[i][1])+"\n\n"+str(nuove[i][2])
+                stringa=str(nuove[i][0])+"\n\n"+str(nuove[i][1])+"\n\n"+str(nuove[i][2])
                 to_send.append(stringa)
         with open(path+"updated_news.html","w") as f: #aggiorno la pagina con le nuove notizie
             f.write(new_page)

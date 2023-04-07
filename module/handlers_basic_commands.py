@@ -15,7 +15,7 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-def add_handlers(): #defining handlers
+def add_handlers() -> list: #defining handlers
     handlers = [
         #CommandHandler('start',welcome),
         CommandHandler('see_user',see_user),
@@ -27,13 +27,13 @@ def add_handlers(): #defining handlers
     ]
     return handlers
 
-async def reset(context:ContextTypes.DEFAULT_TYPE,message:Update):
+async def reset(context:ContextTypes.DEFAULT_TYPE,message:Update) -> None:
     await context.bot.delete_message(chat_id=message.effective_chat.id,message_id=message.effective_message.id)
     context.chat_data['counter']=0
     await context.bot.send_message(chat_id=message.effective_chat.id,text="Errore durante l'operazione.\nProva di nuovo !",reply_markup=await general_markup())
 
 
-async def buttons(message: Update, context: ContextTypes.DEFAULT_TYPE):
+async def buttons(message: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = message.callback_query
     await query.answer()    
     
@@ -125,21 +125,21 @@ async def buttons(message: Update, context: ContextTypes.DEFAULT_TYPE):
             await reset(context,message)        
 
 
-async def contributors(message: Update, context: ContextTypes.DEFAULT_TYPE):
+async def contributors(message: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await context.bot.send_message(chat_id=message.effective_chat.id,text=
 """@B4catr0n42, @SuperBomber
 
 https://github.com/Leonardo0101/FCE_bot.git""")
 
-async def welcome(message: Update, context: ContextTypes.DEFAULT_TYPE):
+async def welcome(message: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await context.bot.send_message(chat_id=message.effective_chat.id, text="Benvenuto nel bot per info sulla Ferrovia Circumetnea\nAltri comandi disponibili /help /contributors")
     await start(message,context)
 
-async def start(message: Update, context: ContextTypes.DEFAULT_TYPE):
+async def start(message: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     context.chat_data['counter']=0
     await context.bot.send_message(chat_id=message.effective_chat.id, text="Cosa posso fare per te ?",reply_markup=await general_markup())
 
-async def help(message: Update, context: ContextTypes.DEFAULT_TYPE):
+async def help(message: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await context.bot.send_message(chat_id=message.effective_chat.id, text=
 """Info utili: si consiglia di non fare piu' operazioni in contemporanea con piu' liste opzioni (/start), perche' potreste incorrere in alcuni errori e dover ripetere le operazioni.
 Una volta non piu' presenti le operazioni (nel caso di fine controllo linea) potete eseguire un nuovo /start.
@@ -158,7 +158,7 @@ Tutte le linee da prima all'ora di ARRIVO scelta - permette di avere tutte le li
 
 Esempio di range: se scelgo le 8.00 intendiamo come range fino alle 8.59""")
 
-async def scraping_messages(message: Update, context: ContextTypes.DEFAULT_TYPE):
+async def scraping_messages(message: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if message.message.text not in ["/start","/help","/contributors"]:
         await context.bot.delete_message(chat_id=message.effective_chat.id,message_id=message.effective_message.id)
     if message.message.text == "/start":
@@ -177,7 +177,7 @@ async def scraping_messages(message: Update, context: ContextTypes.DEFAULT_TYPE)
             context.chat_data['start_count']=0
             await welcome(message,context)
 
-async def see_user(message: Update, context: ContextTypes.DEFAULT_TYPE):
-    if str(message.effective_user.id)==(open("my_userid.txt","r").read()).strip():
+async def see_user(message: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if str(message.effective_user.id)==(open("./module/private/my_userid.txt","r").read()).strip():
         with sql.connect("users.db") as connection:
             await context.bot.send_message(message.effective_chat.id,text=str(select_db_users(connection)))
