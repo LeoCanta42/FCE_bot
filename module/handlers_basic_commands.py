@@ -21,6 +21,7 @@ def add_handlers() -> list: #defining handlers
         CommandHandler('see_user',see_user),
         CommandHandler('help',help),
         CommandHandler('contributors',contributors),
+        CommandHandler('chat_id',chat_id),
         CallbackQueryHandler(buttons),
         MessageHandler(filters=None,callback=scraping_messages)
         
@@ -159,12 +160,12 @@ Tutte le linee da prima all'ora di ARRIVO scelta - permette di avere tutte le li
 Esempio di range: se scelgo le 8.00 intendiamo come range fino alle 8.59""")
 
 async def scraping_messages(message: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if message.message.text not in ["/start","/help","/contributors"]:
+    if message.message.text not in ["/start","/help","/contributors","/chat_id"]:
         await context.bot.delete_message(chat_id=message.effective_chat.id,message_id=message.effective_message.id)
     if message.message.text == "/start":
         
         with sql.connect("users.db") as connection:
-            await insert_db_user(connection,message.effective_user.id,message.effective_chat.id,message.effective_user.username)
+            await insert_db_user(connection,message.effective_chat.id,message.effective_user.username)
         
         if 'counter' in context.chat_data and context.chat_data['counter']>=0 and context.chat_data['counter']<=4 and ('start_count' in context.chat_data) and context.chat_data['start_count']<2: 
             #verifico che ci sia solo uno start in esecuzione e per essere tale deve essere almeno 0 (chiamata a start)
@@ -181,3 +182,6 @@ async def see_user(message: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if str(message.effective_user.id)==(open("./module/private/my_userid.txt","r").read()).strip():
         with sql.connect("users.db") as connection:
             await context.bot.send_message(message.effective_chat.id,text=str(select_db_users(connection)))
+
+async def chat_id(message: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await context.bot.send_message(message.effective_chat.id,text="Ecco l'id di questa chat: "+str(message.effective_chat.id))
