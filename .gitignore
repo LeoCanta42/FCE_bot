@@ -4,6 +4,7 @@
 *.real
 *.out
 *.db
+*_test.py
 private/
 .vscode/
 .venv/
