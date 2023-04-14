@@ -70,6 +70,10 @@ async def bus_markup() -> InlineKeyboardMarkup:
             stop_counter=0
             i+=1
         stop=stop.replace('\n','')
+        if len(stop)>23: #questa condizione mi permette di mettere un solo pulsante (e non step colonne) se questo ha un testo lungo
+            keyboard.append([])
+            i+=1
+            stop_counter=step
         keyboard[i].append((InlineKeyboardButton(str(stop),callback_data=str(stop))))
         stop_counter+=1
     
@@ -92,6 +96,10 @@ async def tr_markup() -> InlineKeyboardMarkup:
             stop_counter=0
             i+=1
         stop=stop.replace('\n','')
+        if len(stop)>23: #questa condizione mi permette di mettere un solo pulsante (e non step colonne) se questo ha un testo lungo
+            keyboard.append([])
+            i+=1
+            stop_counter=step
         keyboard[i].append((InlineKeyboardButton(str(stop),callback_data=str(stop))))
         stop_counter+=1
 
