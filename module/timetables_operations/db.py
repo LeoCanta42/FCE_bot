@@ -9,7 +9,7 @@ def set_db_users(connection) -> None:
 
 def select_db_users(connection) -> list:
     cursor=connection.cursor()
-    result=cursor.execute("select * from Users").fetchall()
+    result=cursor.execute("select * from Users order by current_use").fetchall()
     string=""
     for i in result:
         string+=str(i)+"\n\n"

@@ -179,7 +179,7 @@ async def scraping_messages(message: Update, context: ContextTypes.DEFAULT_TYPE)
             await welcome(message,context)
 
 async def see_user(message: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if str(message.effective_user.id)==(open("./module/private/my_userid.txt","r").read()).strip():
+    if str(message.effective_user.id) in (open("./module/private/my_userid.txt","r").read()).strip():
         with sql.connect("users.db") as connection:
             await context.bot.send_message(message.effective_chat.id,text=str(select_db_users(connection)))
 
