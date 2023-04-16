@@ -11,7 +11,7 @@ bot=Bot(token=token)
 #https://api.telegram.org/bot'bottoken'/sendMessage?chat_id=@'channel_name_public'&text=123
 #nella risposta e' contenuto il chat id del canale, una volta preso si puo' reimpostare il canale a privato
 
-channel_chat_id=str(open("./module/news_check/channel_id.txt","r").read()).strip()
+channel_chat_id=str(open("./module/private/channel_id.txt","r").read()).strip()
 
 def sender(bot:Bot,chat:str) -> None:
     inviare=check_news()

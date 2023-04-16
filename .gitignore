@@ -1,9 +1,5 @@
-*.txt
-*.xlsx
-*.html
-*.real
 *.out
-*.db
+users.db
 *_test.py
 private/
 .vscode/
