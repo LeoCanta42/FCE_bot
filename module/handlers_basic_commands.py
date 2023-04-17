@@ -4,8 +4,6 @@ from telegram.ext import ContextTypes,CommandHandler,CallbackQueryHandler, Messa
 from module.retrieve_webdata import getdownload_urls
 from module.markups import general_markup,bus_markup,tr_markup,transport_markup,times_markup,near_time_markup
 from module.timetables_operations.calculate_times import find_lines
-from module.timetables_operations.calculate_times import query_findpartenza,query_finddestinazione,query_finddestinazione2,query_findpartenza2
-
 from module.timetables_operations.db import insert_db_user,select_db_users
 import sqlite3 as sql
 import threading
@@ -98,7 +96,7 @@ async def buttons(message: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         else:
             await reset(context,message)
 
-    elif(query.data == "near_partenza" or query.data == "near_arrivo" or query.data == "near_partenza2" or query.data == "near_arrivo2"):
+    elif(query.data in ["near_partenza","near_arrivo","near_partenza2","near_arrivo2"]):
         if (context.chat_data['counter']==4):
             context.chat_data['counter']=5
             context.chat_data['near_function']=query.data
@@ -111,16 +109,8 @@ async def buttons(message: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             context.chat_data['counter']=6
             context.chat_data['ora']=query.data
             await context.bot.delete_message(chat_id=message.effective_chat.id, message_id=message.effective_message.id)
-            if context.chat_data['near_function']=='near_partenza':
-                query=query_findpartenza
-            elif context.chat_data['near_function']=='near_arrivo':
-                query=query_finddestinazione
-            elif context.chat_data['near_function']=='near_partenza2':
-                query=query_findpartenza2
-            elif context.chat_data['near_function']=='near_arrivo2':
-                query=query_finddestinazione2
-
-            threading.Thread(target=await find_lines(context,message,query)).start() #ricerca linee
+            query_type=context.chat_data['near_function']
+            threading.Thread(target=await find_lines(context,message,query_type)).start() #ricerca linee
             #await start(message,context)
         else:
             await reset(context,message)        
@@ -157,7 +147,9 @@ Linee con ARRIVO vicino l'ora scelta - permette di avere tutte le linee in cui l
 Tutte le linee dall'ora di PARTENZA scelta in poi - permette di avere tutte le linee in cui la partenza e' nel range da quell'ora scelta in poi
 Tutte le linee da prima all'ora di ARRIVO scelta - permette di avere tutte le linee in cui l'ora di arrivo e' prima o nello stesso range di quella scelta
 
-Esempio di range: se scelgo le 8.00 intendiamo come range fino alle 8.59""")
+Esempio di range: se scelgo le 8.00 intendiamo come range fino alle 8.59
+
+Si informano inoltre gli utenti che usando il bot si acconsente a memorizzare il chat_id riferito a questa chat e l'ora dell'ultimo utilizzo, il tutto a scopi puramente statistici e/o per ottenere degli avvisi a seguito di modifiche o altre informazioni""")
 
 async def scraping_messages(message: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if message.message.text not in ["/start","/help","/contributors","/chat_id"]:
@@ -165,7 +157,7 @@ async def scraping_messages(message: Update, context: ContextTypes.DEFAULT_TYPE)
     if message.message.text == "/start":
         
         with sql.connect("users.db") as connection:
-            await insert_db_user(connection,message.effective_chat.id,message.effective_user.username)
+            await insert_db_user(connection,message.effective_chat.id)
         
         if 'counter' in context.chat_data and context.chat_data['counter']>=0 and context.chat_data['counter']<=4 and ('start_count' in context.chat_data) and context.chat_data['start_count']<2: 
             #verifico che ci sia solo uno start in esecuzione e per essere tale deve essere almeno 0 (chiamata a start)
