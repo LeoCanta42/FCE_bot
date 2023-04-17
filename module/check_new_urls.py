@@ -5,10 +5,10 @@ import shutil,os
 import asyncio
 
 def check(type:int) -> bool: #1 littorina 2 bus
-    h=True
-    for oldurl in open("./module/urls"+str(type)+".txt","r"):
-        if oldurl not in asyncio.run(getdownload_urls(type)):
-            h=False
+    h=False
+    for urls in asyncio.run(getdownload_urls(type)):
+        if urls not in open("./module/urls"+str(type)+".txt","r").read().strip():
+            h=True
     if type==1: t="littorina"
     elif type==2: t="bus"
     if not h: print("Nessuna modifica "+t+" !")
@@ -25,6 +25,7 @@ def clean_folders(type:int) -> None:
 
 
 def download_after_check() -> bool:
+    changed=False
     for type in range(1,3):
         if(check(type)):
             clean_folders(type)
@@ -39,7 +40,8 @@ def download_after_check() -> bool:
                     f.write(str(url)+"\n")
                     i+=1
             locations_to_file(t)
-            return True
+            changed=True
         else:
-            return False
+            break
+    return changed
                 

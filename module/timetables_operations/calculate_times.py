@@ -3,7 +3,8 @@ from module.timetables_operations.extract_excel import all_replacing
 #from module.timetables_operations.extract_excel import extract,dimensions
 #from module.timetables_operations.times_op import isTimeFormat,isTimeFormatH,format_time
 from module.timetables_operations.times_op import format_time
-from telegram import Update
+from module.fixed_send_message import fix_message
+from telegram import Update,constants
 from telegram.ext import ContextTypes
 from module.timetables_operations.extract_excel import bus_workbooks,train_workbooks
 import sqlite3 as sql
@@ -41,6 +42,107 @@ query_finddestinazione2='''select t1.orario, t2.orario
                 tr.idTratta=t1.idTratta and tr.Mezzo=? and t2.orario>t1.orario and (strftime('%H.%M',?)-t2.orario)>=0
                 order by t1.orario'''
 
+query_findincroci='''
+SELECT V1.fermPar AS FermataPartenza, V1.orpar AS OrarioPartenza, V1.fermArr AS FermataScambio, V1.orarr AS OrarioArrivoScambio, V2.orpar AS OrarioPartenzaScambio, V2.fermArr AS FermataArrivo, V2.orarr AS OrarioArrivo
+FROM (
+    SELECT t1.orario as orpar, f1.Nome as fermPar, t2.orario as orarr, f2.Nome as fermArr
+    FROM TratteFermate t1,TratteFermate t2, Fermate as f1,Fermate as f2, Tratte as tr
+    WHERE t1.idTratta=t2.idTratta AND 
+        t1.idFermata=f1.idFermata AND 
+        f1.nomereplace=? AND
+
+        t2.idFermata=f2.idFermata AND  
+        f1.nomereplace!=f2.nomereplace AND
+        tr.idTratta=t1.idTratta AND 
+        tr.Mezzo=? AND 
+        t2.orario>t1.orario
+) AS V1, 
+(   SELECT t3.orario as orpar, f3.Nome as fermPar, t4.orario as orarr, f4.Nome as fermArr
+    FROM TratteFermate t3,TratteFermate t4, Fermate as f3,Fermate as f4, Tratte as tr2
+    WHERE t3.idTratta=t4.idTratta AND 
+        t3.idFermata=f3.idFermata AND 
+        
+        t4.idFermata=f4.idFermata AND 
+        f4.nomereplace=? AND 
+        f3.nomereplace!=f4.nomereplace AND
+        tr2.idTratta=t3.idTratta AND 
+        tr2.Mezzo=? AND 
+        t4.orario>t3.orario
+) AS V2
+WHERE V1.fermArr = V2.fermPar AND V1.orarr <= V2.orpar
+'''
+#primo select trova tutte le destinazioni raggiungibili dalla partenza passata
+#secondo select trova tutte le partenze che fanno raggiungere l'arrivo passato
+#condizione veririfica che l'arrivo del primo è = partenza del secondo
+
+
+async def find_lines(context:ContextTypes.DEFAULT_TYPE,message:Update,query_type:str) -> None: 
+    a=str(context.chat_data['partenza'])
+    b=str(context.chat_data['arrivo'])
+    
+    tipo=str(context.chat_data['tipo_trasporto'])
+    if tipo=="bus": tipo="BUS"
+    elif tipo=="littorina": tipo="TR"
+
+    time=str(context.chat_data['ora'])
+    dep_time=datetime.strptime(time,"%H.%M")
+    interval=59
+
+    with sql.connect("fce_lines.db") as connection:
+        cursor = connection.cursor()
+        not_direct=False
+
+        if query_type=="near_arrivo2":
+            result=cursor.execute(query_finddestinazione2,(all_replacing(a),all_replacing(b),tipo,str((dep_time+timedelta(minutes=interval)).time()),)).fetchall()
+        elif query_type=="near_partenza2":
+            result=cursor.execute(query_findpartenza2,(all_replacing(a),all_replacing(b),tipo,str(dep_time.time()),)).fetchall()
+        elif query_type=="near_partenza":
+            result=cursor.execute(query_findpartenza,(all_replacing(a),all_replacing(b),tipo,str(dep_time.time()),str((dep_time+timedelta(minutes=interval)).time()),)).fetchall()
+        elif query_type=="near_arrivo":
+            result=cursor.execute(query_finddestinazione,(all_replacing(a),all_replacing(b),tipo,str(dep_time.time()),str((dep_time+timedelta(minutes=interval)).time()),)).fetchall()
+
+        if len(result)==0: #quindi non esiste linea diretta, senno' l'avrebbe trovata con quelli prima
+            not_direct=True
+            query=query_findincroci
+            if query_type=="near_arrivo2": #compongo la query con quello che serve da aggiungere per validare quelle condizioni
+                query+='''
+                AND (strftime('%H.%M',?)-V2.orarr)>=0'''
+            elif query_type=="near_partenza2":
+                query+='''
+                AND (strftime('%H.%M',?)-V1.orpar)<=0'''
+            elif query_type=="near_partenza":
+                query+='''
+                AND (strftime('%H.%M',?)-V1.orpar)<=0 AND (strftime('%H.%M',?)-V1.orpar)>=0'''
+            elif query_type=="near_arrivo":
+                query+='''
+                AND (strftime('%H.%M',?)-V2.orarr)<=0 AND (strftime('%H.%M',?)-V2.orarr)>=0'''
+
+            query+='''
+            ORDER BY OrarioPartenza'''#giusto per ordinare gli orari
+
+            if query_type=="near_arrivo2":
+                result=cursor.execute(query,(all_replacing(a),tipo,all_replacing(b),tipo,str((dep_time+timedelta(minutes=interval)).time()),)).fetchall()
+            elif query_type=="near_partenza2":
+                result=cursor.execute(query,(all_replacing(a),tipo,all_replacing(b),tipo,str(dep_time.time()),)).fetchall()
+            else:
+                result=cursor.execute(query,(all_replacing(a),tipo,all_replacing(b),tipo,str(dep_time.time()),str((dep_time+timedelta(minutes=interval)).time()),)).fetchall()
+    
+    if len(result)>0:
+        string="Linea esistente"
+        for i in result:
+            if not_direct: #se deve fare la ricerca con incroci ha un formato diverso l'output
+                string+="\n\n"+str(tipo)+"\n"+str(a)+": "+format_time(str(i[1]))+"\n"+str(i[2])+": "+format_time(str(i[3]))+"\n\n"+str(i[2])+": "+format_time(str(i[4]))+"\n"+str(b)+": "+format_time(str(i[6]))
+            else:
+                string+="\n\n"+str(tipo)+"\n"+str(a)+": "+format_time(str(i[0]))+"\n"+str(b)+": "+format_time(str(i[1]))
+    else:
+        string="Linea non esistente"
+    
+    to_send=fix_message(string)
+    
+    for msg in to_send: #per ogni elemento nella stringa inviamo un messaggio
+        threading.Thread(target=await context.bot.send_message(chat_id=message.effective_chat.id,text=msg))
+    
+
 '''
 query_testing=""" select f.Nome,tr.orario,t.CodiceTratta
                 from Fermate f, Tratte t, TratteFermate tr
@@ -63,40 +165,6 @@ def find_lines2():
             h=False
         print(str(i))
 '''   #serve per vedere tutte le linee in ordine per colonne
-
-async def find_lines(context:ContextTypes.DEFAULT_TYPE,message:Update,query:str) -> None: 
-    a=str(context.chat_data['partenza'])
-    b=str(context.chat_data['arrivo'])
-    
-    tipo=str(context.chat_data['tipo_trasporto'])
-    if tipo=="bus": tipo="BUS"
-    elif tipo=="littorina": tipo="TR"
-
-    time=str(context.chat_data['ora'])
-    dep_time=datetime.strptime(time,"%H.%M")
-    interval=59
-
-    with sql.connect("fce_lines.db") as connection:
-        cursor = connection.cursor()
-        
-        if query==query_finddestinazione2:
-            result=cursor.execute(query,(all_replacing(a),all_replacing(b),tipo,str((dep_time+timedelta(minutes=interval)).time()),)).fetchall()
-        elif query==query_findpartenza2:
-            result=cursor.execute(query,(all_replacing(a),all_replacing(b),tipo,str(dep_time.time()),)).fetchall()
-        else:
-            result=cursor.execute(query,(all_replacing(a),all_replacing(b),tipo,str(dep_time.time()),str((dep_time+timedelta(minutes=interval)).time()),)).fetchall()
-    
-    string="Linea esistente"
-    h=False
-    for i in result:
-        string+="\n\n"+str(tipo)+"\n"+str(a)+": "+format_time(str(i[0]))+"\n"+str(b)+": "+format_time(str(i[1]))
-        h=True
-    if not h:
-        string="Linea non esistente"
-    
-    threading.Thread(target=await context.bot.send_message(chat_id=message.effective_chat.id,text=string))
-    
-
 
 #work without DB ---- uses matrix
 '''

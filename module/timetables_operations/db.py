@@ -20,7 +20,7 @@ async def insert_db_user(connection,chatid:str) -> None:
     cursor=connection.cursor()
     check_exist=cursor.execute("select * from Users where chatid=?",(chatid,)).fetchall()
     if len(check_exist)<=0: #lo fa solo se non esiste gia'
-        cursor.execute("insert into Users(chatid,current_use) values(?,?,?)",(chatid,time,))
+        cursor.execute("insert into Users(chatid,current_use) values(?,?)",(chatid,time,))
     elif len(check_exist)>0:
         cursor.execute("update Users set current_use=? where chatid=?",(time,chatid,))
 
