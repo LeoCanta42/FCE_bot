@@ -13,16 +13,19 @@ bot=Bot(token=token)
 
 channel_chat_id=str(open("./module/private/channel_id.txt","r").read()).strip()
 
-def sender(bot:Bot,chat:str) -> None:
+async def sender(bot:Bot,chat:str) -> None:
     inviare=check_news()
     if inviare:
         for news in inviare:
-            asyncio.run(bot.send_message(chat_id=chat,text=news))
+            await bot.send_message(chat_id=chat,text=news,parse_mode='Markdown')
     else:
         return
 
+def run_sender(bot:Bot,chat:str) -> None:
+    asyncio.run(sender(bot,chat))
+
 if __name__=="__main__":
-    schedule.every().hour.do(sender,bot,channel_chat_id)
+    schedule.every().hour.do(run_sender,bot,channel_chat_id)
     while True:
        schedule.run_pending()
        time.sleep(300) #5minuti

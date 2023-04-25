@@ -128,19 +128,19 @@ async def find_lines(context:ContextTypes.DEFAULT_TYPE,message:Update,query_type
                 result=cursor.execute(query,(all_replacing(a),tipo,all_replacing(b),tipo,str(dep_time.time()),str((dep_time+timedelta(minutes=interval)).time()),)).fetchall()
     
     if len(result)>0:
-        string="Linea esistente"
+        string=""
         for i in result:
             if not_direct: #se deve fare la ricerca con incroci ha un formato diverso l'output
-                string+="\n\n"+str(tipo)+"\n"+str(a)+": "+format_time(str(i[1]))+"\n"+str(i[2])+": "+format_time(str(i[3]))+"\n\n"+str(i[2])+": "+format_time(str(i[4]))+"\n"+str(b)+": "+format_time(str(i[6]))
+                string+="_Linea non diretta_\n"+("*"+str(tipo)+"*")+"\n"+format_time(str(i[1]))+" - "+str(a)+"\n"+format_time(str(i[3]))+" - "+str(i[2])+"\n\n"+format_time(str(i[4]))+" - "+str(i[2])+"\n"+format_time(str(i[6]))+" - "+str(b)+"\n\n"
             else:
-                string+="\n\n"+str(tipo)+"\n"+str(a)+": "+format_time(str(i[0]))+"\n"+str(b)+": "+format_time(str(i[1]))
+                string+="_Linea diretta_\n"+("*"+str(tipo)+"*")+"\n"+format_time(str(i[0]))+" - "+str(a)+"\n"+format_time(str(i[1]))+" - "+str(b)+"\n\n"
     else:
         string="Linea non esistente"
     
     to_send=fix_message(string)
     
     for msg in to_send: #per ogni elemento nella stringa inviamo un messaggio
-        threading.Thread(target=await context.bot.send_message(chat_id=message.effective_chat.id,text=msg))
+        threading.Thread(target=await context.bot.send_message(chat_id=message.effective_chat.id,text=msg,parse_mode='Markdown'))
     
 
 '''

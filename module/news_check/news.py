@@ -77,8 +77,8 @@ def check_news() -> list:
                 if nuove[i][0]==vecchie[j][0]: #se e' uguale almeno ad uno allora e' notizia vecchia
                     h=True
                     break #posso fermarmi, non devo considerarla
-            if not h:
-                stringa=str(nuove[i][0])+"\n\n"+str(nuove[i][1])+"\n\n"+str(nuove[i][2])
+            if not h: #vuol dire che quella notizia era diversa da tutte le altre vecchie, quindi nuova
+                stringa="*"+str(nuove[i][0])+"*"+"\n\n"+"_"+str(nuove[i][1])+"_"+"\n\n"+str(nuove[i][2])
                 to_send.append(stringa)
         with open(path+"updated_news.html","w") as f: #aggiorno la pagina con le nuove notizie
             f.write(new_page)

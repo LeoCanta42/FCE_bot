@@ -3,6 +3,7 @@ rm users.db
 rm module/news_check/updated_news.html
 echo "" > module/urls1.txt
 echo "" > module/urls2.txt
+echo "" > module/news_check/updated_news.html
 rm -r module/timetables_operations/bus
 rm -r module/timetables_operations/littorina
 mkdir module/timetables_operations/bus
