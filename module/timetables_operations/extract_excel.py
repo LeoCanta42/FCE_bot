@@ -102,10 +102,11 @@ def locations_to_file(tipo:str) -> None:
                                 b=True
                             elif tipo=="littorina" and str(matrix[start-2][j]).replace('.','')=="TR":
                                 t=True
+                    insert=str(matrix[i][0])
                     if tipo=="bus" and b:
-                        different_loc.append(str(matrix[i][0]))
+                        different_loc.append(insert)
                     elif tipo=="littorina" and t:
-                        different_loc.append(str(matrix[i][0]))
+                        different_loc.append(insert)
     
     different_loc.sort()
     with open(path+tipo+"/locations.txt","w") as f:
