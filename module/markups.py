@@ -1,5 +1,5 @@
 from telegram import InlineKeyboardButton,InlineKeyboardMarkup
-
+import sqlite3 as sql
 path="./module/"
 
 async def general_markup() -> InlineKeyboardMarkup:
@@ -51,6 +51,7 @@ async def transport_markup() -> InlineKeyboardMarkup:
     keyboard = [
         [InlineKeyboardButton("BUS", callback_data="bus"),
         InlineKeyboardButton("LITTORINA", callback_data="littorina")],
+        #[InlineKeyboardButton("QUALSIASI", callback_data="qualsiasi")],
         [InlineKeyboardButton("<-- Back   ",callback_data="general")]
     ]
     markup=InlineKeyboardMarkup(keyboard)
@@ -64,7 +65,11 @@ async def bus_markup() -> InlineKeyboardMarkup:
     i=0
     stop_counter=0
     keyboard.append([])
-    for stop in open(path+"timetables_operations/bus/locations.txt","r"): 
+    with sql.connect("fce_lines.db") as connection:
+        cursor=connection.cursor()
+        stops=cursor.execute("select distinct Nome from Fermate where bus=1").fetchall()
+    for curstop in stops:
+        stop=curstop[0]
         if(stop_counter>=step): 
             keyboard.append([])
             stop_counter=0
@@ -90,7 +95,11 @@ async def tr_markup() -> InlineKeyboardMarkup:
     i=0
     stop_counter=0
     keyboard.append([])
-    for stop in open(path+"timetables_operations/littorina/locations.txt","r"): 
+    with sql.connect("fce_lines.db") as connection:
+        cursor=connection.cursor()
+        stops=cursor.execute("select distinct Nome from Fermate where littorina=1").fetchall()
+    for curstop in stops:
+        stop=curstop[0]
         if(stop_counter>=step): 
             keyboard.append([])
             stop_counter=0
@@ -101,6 +110,48 @@ async def tr_markup() -> InlineKeyboardMarkup:
             i+=1
             stop_counter=step
         keyboard[i].append((InlineKeyboardButton(str(stop),callback_data=str(stop))))
+        stop_counter+=1
+
+    keyboard.append([])
+    keyboard[i+1].append(InlineKeyboardButton("<-- Back   ",callback_data="default"))
+    markup = InlineKeyboardMarkup(keyboard)
+    return markup
+
+async def any_markup() -> InlineKeyboardMarkup:
+    
+    step=2 #numero di colonne
+    keyboard = []
+    
+    i=0
+    stop_counter=0
+    keyboard.append([])
+    to_put=set()
+    with sql.connect("fce_lines.db") as connection:
+        cursor=connection.cursor()
+        stops=cursor.execute("select distinct Nome, bus, littorina from Fermate").fetchall()
+    for curstop in stops:
+        bus=curstop[1]
+        littorina=curstop[2]
+        add=""
+        if bus==1 and littorina==0:
+            add="(BUS)"
+        elif littorina==1 and bus==0:
+            add="(LIT)"
+        stop=curstop[0]
+        to_put.add(stop)
+    to_put=sorted(to_put)
+
+    for stop in to_put:
+        if(stop_counter>=step): 
+            keyboard.append([])
+            stop_counter=0
+            i+=1
+        if len(stop)>17: #questa condizione mi permette di mettere un solo pulsante (e non step colonne) se questo ha un testo lungo
+            keyboard.append([])
+            i+=1
+            stop_counter=step
+
+        keyboard[i].append((InlineKeyboardButton(str(stop),callback_data=stop)))
         stop_counter+=1
 
     keyboard.append([])

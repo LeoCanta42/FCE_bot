@@ -80,7 +80,5 @@ def check_news() -> list:
             if not h: #vuol dire che quella notizia era diversa da tutte le altre vecchie, quindi nuova
                 stringa="*"+str(nuove[i][0])+"*"+"\n\n"+"_"+str(nuove[i][1])+"_"+"\n\n"+str(nuove[i][2])
                 to_send.append(stringa)
-        with open(path+"updated_news.html","w") as f: #aggiorno la pagina con le nuove notizie
-            f.write(new_page)
         
         return to_send

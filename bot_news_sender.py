@@ -1,8 +1,12 @@
 from telegram import Bot
-from module.news_check.news import check_news
+from module.news_check.news import check_news,indexes
+import requests
 import schedule
 import time
 import asyncio
+
+# import os
+# os.chdir("/home/pi/FCE_bot")
 
 token=str(open("./module/private/news_fcebot_token.txt","r").read()).strip()
 bot=Bot(token=token)
@@ -15,10 +19,20 @@ channel_chat_id=str(open("./module/private/channel_id.txt","r").read()).strip()
 
 async def sender(bot:Bot,chat:str) -> None:
     inviare=check_news()
-    if inviare:
-        for news in inviare:
-            await bot.send_message(chat_id=chat,text=news,parse_mode='Markdown')
-    else:
+    try:
+        if inviare:
+            for news in inviare:
+                await bot.send_message(chat_id=chat,text=news,parse_mode='Markdown')
+            
+            new_page=requests.get("https://www.circumetnea.it/category/news/")
+            ind=indexes(new_page)
+            new_page=new_page.text[ind[0]:ind[1]]
+            with open("./module/news_check/updated_news.html","w") as f: #aggiorno la pagina con le nuove notizie
+                f.write(new_page)
+        else:
+            return
+    except Exception as e:
+        print("Errore durante l'esecuzione della query: {}".format(e))
         return
 
 def run_sender(bot:Bot,chat:str) -> None:
@@ -28,5 +42,5 @@ if __name__=="__main__":
     schedule.every().hour.do(run_sender,bot,channel_chat_id)
     while True:
        schedule.run_pending()
-       time.sleep(300) #5minuti
+       time.sleep(300) #5 min
     

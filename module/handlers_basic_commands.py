@@ -2,7 +2,7 @@ import logging
 from telegram import Update
 from telegram.ext import ContextTypes,CommandHandler,CallbackQueryHandler, MessageHandler
 from module.retrieve_webdata import getdownload_urls
-from module.markups import general_markup,bus_markup,tr_markup,transport_markup,times_markup,near_time_markup
+from module.markups import general_markup,bus_markup,tr_markup,transport_markup,times_markup,near_time_markup,any_markup
 from module.timetables_operations.calculate_times import find_lines
 from module.timetables_operations.db import insert_db_user,select_db_users
 import sqlite3 as sql
@@ -31,7 +31,12 @@ async def reset(context:ContextTypes.DEFAULT_TYPE,message:Update) -> None:
     context.chat_data['counter']=0
     await context.bot.send_message(chat_id=message.effective_chat.id,text="Errore durante l'operazione.\nProva di nuovo !",reply_markup=await general_markup())
 
-
+def check_all(s:str) -> bool:
+    if s in (open("./module/timetables_operations/bus/locations.txt","r")).read() or s in (open("./module/timetables_operations/littorina/locations.txt","r")).read():
+        return True
+    else:
+        return False
+    
 async def buttons(message: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = message.callback_query
     await query.answer()    
@@ -67,7 +72,7 @@ async def buttons(message: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         #causa riavvio bot o altro, resetto
         await reset(context,message)
 
-    elif(query.data in ["bus","littorina"]):
+    elif(query.data in ["bus","littorina","qualsiasi"]):
         if(context.chat_data['counter']==1):
             context.chat_data['counter']=2
             context.chat_data['tipo_trasporto']=query.data
@@ -75,6 +80,8 @@ async def buttons(message: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 await context.bot.edit_message_text(chat_id=message.effective_chat.id,message_id=message.effective_message.id, text="Scegli fermata di _PARTENZA_",reply_markup=await bus_markup(),disable_web_page_preview=True,parse_mode='Markdown')
             elif context.chat_data['tipo_trasporto']=="littorina":
                 await context.bot.edit_message_text(chat_id=message.effective_chat.id,message_id=message.effective_message.id, text="Scegli fermata di _PARTENZA_",reply_markup=await tr_markup(),disable_web_page_preview=True,parse_mode='Markdown')
+            # elif context.chat_data['tipo_trasporto']=="qualsiasi":
+            #     await context.bot.edit_message_text(chat_id=message.effective_chat.id,message_id=message.effective_message.id, text="Scegli fermata di _PARTENZA_",reply_markup=await any_markup(),disable_web_page_preview=True,parse_mode='Markdown')
         else:
             await reset(context,message)
 
@@ -84,7 +91,7 @@ async def buttons(message: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await context.bot.delete_message(chat_id=message.effective_chat.id, message_id=message.effective_message.id)
         await context.bot.send_message(chat_id=message.effective_chat.id, text="Scegli tipologia di controllo\n(sceglierai l'ora nel prossimo step)",reply_markup=await near_time_markup())
 
-    elif(query.data in (open("./module/timetables_operations/"+str(context.chat_data['tipo_trasporto'])+"/locations.txt","r")).read()):
+    elif(check_all(query.data)):
         if(context.chat_data['counter']==2):
             context.chat_data['counter']=3
             context.chat_data['partenza']=query.data
@@ -93,6 +100,8 @@ async def buttons(message: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 await context.bot.send_message(chat_id=message.effective_chat.id, text="Scegli fermata di _ARRIVO_",reply_markup=await bus_markup(),disable_web_page_preview=True,parse_mode='Markdown')
             elif context.chat_data['tipo_trasporto']=="littorina":
                 await context.bot.send_message(chat_id=message.effective_chat.id, text="Scegli fermata di _ARRIVO_",reply_markup=await tr_markup(),disable_web_page_preview=True,parse_mode='Markdown')
+            # elif context.chat_data['tipo_trasporto']=="qualsiasi":
+            #     await context.bot.send_message(chat_id=message.effective_chat.id, text="Scegli fermata di _ARRIVO_",reply_markup=await any_markup(),disable_web_page_preview=True,parse_mode='Markdown')
         else:
             await reset(context,message)
 
