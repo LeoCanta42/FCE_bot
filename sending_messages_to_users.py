@@ -2,6 +2,9 @@ from telegram import Bot
 import asyncio
 import sqlite3 as sql
 
+# import os
+# os.chdir("/home/pi/FCE_bot")
+
 token=str(open("./module/private/fcebot_token.txt","r").read()).strip()
 bot=Bot(token=token)
 tosend='''
