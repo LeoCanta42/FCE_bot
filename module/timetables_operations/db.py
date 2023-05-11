@@ -50,8 +50,13 @@ def insert_fermate(connection) -> None:
     
     for i in range(len(train_loc)):
         train_loc[i]=train_loc[i].replace('\n','')
+        if train_loc[i]=="NESIMA":
+            train_loc[i]=="CATANIA (Metro Nesima)"
+        elif train_loc[i]=="CIBALI":
+            train_loc[i]="CATANIA CIBALI"
+        #per rimpiazzare NESIMA e CIBALI della littorina in CATANIA ...
         if all_replacing(train_loc[i]) in bus_loc:
-            cursor.execute("update Fermate set littorina=1 where Nome=?",(train_loc[i],))
+            cursor.execute("update Fermate set littorina=1 where nomereplace=?",(all_replacing(str(train_loc[i])),))
         else:
             cursor.execute("insert into Fermate(Nome,littorina,bus,nomereplace) values(?,1,0,?)",(train_loc[i],str(all_replacing(str(train_loc[i]))),))
 
@@ -82,16 +87,22 @@ def insert_tratte(connection) -> None: #tratte e collegamento fermata-tratta
 
                     for j in range(2,cols): #da 2 perche' i primi due sono occupati da cella STAZIONI/FERMATE
                         #matrix[start-2][j] #-2 mi da bus e treni, -1 mi torna i codici delle tratte
-                        if (cursor.execute("select * from Tratte where CodiceTratta=? and Mezzo=?",(str(matrix[start-1][j]),r_tipo)))!=None and str(matrix[start-2][j]).replace('.','')==r_tipo: # questo ultimo controllo serve per ora che abbiamo un file unico
+                        if (cursor.execute("select * from Tratte where CodiceTratta=? and Mezzo=?",(str(matrix[start-1][j]),r_tipo)))!=None and str(matrix[start-2][j]).replace('.','')==r_tipo:
+                             # questo ultimo controllo serve per ora che abbiamo un file unico e nei codici abbiamo BUS e TR. o TR
                             cursor.execute("insert into Tratte (CodiceTratta,Mezzo) values (?,?)",(str(matrix[start-1][j]),r_tipo,))
                             idt=cursor.execute("select idTratta from Tratte where CodiceTratta=? and Mezzo=? ",(str(matrix[start-1][j]),r_tipo,)).fetchone()
                             for i in range(start,rows):
-                                
-                                if (isTimeFormat(str(matrix[i][j])) or isTimeFormatH(str(matrix[i][j]))) and str(matrix[i][j])!="None" and (all_replacing(str(matrix[i][0])) in locs):
+                                element_in_matrix=matrix[i][0]
+                                ##perche' cosi' abbiamo CATANIA ...
+                                if str(matrix[i][0])=="NESIMA":
+                                    element_in_matrix="Catania (Metro Nesima)"
+                                elif str(matrix[i][0])=="CIBALI":
+                                    element_in_matrix="CATANIA CIBALI"
+                                if (isTimeFormat(str(matrix[i][j])) or isTimeFormatH(str(matrix[i][j]))) and str(matrix[i][j])!="None" and (all_replacing(element_in_matrix) in locs):
                                     '''controllo che la localita' 
                                     sia una esistente per evitare di sforare nel foglio e 
-                                    prendere LEGENDA o altro'''
-                                    idf=cursor.execute("select idFermata from Fermate where nomereplace=? ",(str(all_replacing(str(matrix[i][0]))),)).fetchone()
+                                    prendere LEGENDA o altro'''                        
+                                    idf=cursor.execute("select idFermata from Fermate where nomereplace=? ",(str(all_replacing(element_in_matrix)),)).fetchone()
                                     print("idTratta:"+str(idt[0]) +"\nidFermata:"+str(idf[0])+"\n")
                                     cursor.execute("insert into TratteFermate(orario,idTratta,idFermata) values(?,?,?)",(str(format_time(str(matrix[i][j]))),int(idt[0]),int(idf[0]),))
                                     print("Inserito "+str(matrix[i][0])+" "+str(matrix[start-1][j])+" "+str(matrix[start-2][j])+" "+str(matrix[i][j])+"\n\n")
