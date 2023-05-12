@@ -81,7 +81,11 @@ def insert_tratte(connection) -> None: #tratte e collegamento fermata-tratta
                     cols=len(matrix[start])
 
                     locs=[]
-                    tmp=cursor.execute("select nomereplace from Fermate").fetchall()
+                    if tipo=="littorina":
+                        query_toadd=" littorina=1"
+                    elif tipo=="bus":
+                        query_toadd=" bus=1"
+                    tmp=cursor.execute("select nomereplace from Fermate where "+query_toadd).fetchall()
                     for i in tmp:
                         locs.append(i[0])
 
@@ -101,7 +105,8 @@ def insert_tratte(connection) -> None: #tratte e collegamento fermata-tratta
                                 if (isTimeFormat(str(matrix[i][j])) or isTimeFormatH(str(matrix[i][j]))) and str(matrix[i][j])!="None" and (all_replacing(element_in_matrix) in locs):
                                     '''controllo che la localita' 
                                     sia una esistente per evitare di sforare nel foglio e 
-                                    prendere LEGENDA o altro'''                        
+                                    prendere LEGENDA o altro'''                       
+                            
                                     idf=cursor.execute("select idFermata from Fermate where nomereplace=? ",(str(all_replacing(element_in_matrix)),)).fetchone()
                                     print("idTratta:"+str(idt[0]) +"\nidFermata:"+str(idf[0])+"\n")
                                     cursor.execute("insert into TratteFermate(orario,idTratta,idFermata) values(?,?,?)",(str(format_time(str(matrix[i][j]))),int(idt[0]),int(idf[0]),))
