@@ -12,7 +12,8 @@ do :
 done
 
 if [ $1 = 'restart' ]; then
-    nohup ./scheduler.sh
+    /bin/bash scheduler.sh &
+    #nohup solo quando in ssh
 fi
 
 if [ $1 = 'pause' ]; then
