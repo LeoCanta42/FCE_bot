@@ -5,8 +5,10 @@ from module.retrieve_webdata import getdownload_urls
 from module.markups import general_markup,bus_markup,tr_markup,transport_markup,times_markup,near_time_markup,any_markup
 from module.timetables_operations.calculate_times import find_lines
 from module.timetables_operations.db import insert_db_user,select_db_users
+from module.timetables_operations.extract_excel import all_replacing
 import sqlite3 as sql
-import threading
+import asyncio
+
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -32,10 +34,11 @@ async def reset(context:ContextTypes.DEFAULT_TYPE,message:Update) -> None:
     await context.bot.send_message(chat_id=message.effective_chat.id,text="Errore durante l'operazione.\nProva di nuovo !",reply_markup=await general_markup())
 
 def check_all(s:str) -> bool:
-    if s in (open("./module/timetables_operations/bus/locations.txt","r")).read() or s in (open("./module/timetables_operations/littorina/locations.txt","r")).read():
-        return True
-    else:
-        return False
+    with sql.connect("fce_lines.db") as connection:
+        if len(connection.cursor().execute("select Nome from Fermate where nomereplace=?",(all_replacing(s),)).fetchall())>0:
+            return True
+        else:
+            return False
     
 async def buttons(message: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = message.callback_query
@@ -80,8 +83,8 @@ async def buttons(message: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 await context.bot.edit_message_text(chat_id=message.effective_chat.id,message_id=message.effective_message.id, text="Scegli fermata di _PARTENZA_",reply_markup=await bus_markup(),disable_web_page_preview=True,parse_mode='Markdown')
             elif context.chat_data['tipo_trasporto']=="littorina":
                 await context.bot.edit_message_text(chat_id=message.effective_chat.id,message_id=message.effective_message.id, text="Scegli fermata di _PARTENZA_",reply_markup=await tr_markup(),disable_web_page_preview=True,parse_mode='Markdown')
-            # elif context.chat_data['tipo_trasporto']=="qualsiasi":
-            #     await context.bot.edit_message_text(chat_id=message.effective_chat.id,message_id=message.effective_message.id, text="Scegli fermata di _PARTENZA_",reply_markup=await any_markup(),disable_web_page_preview=True,parse_mode='Markdown')
+            elif context.chat_data['tipo_trasporto']=="qualsiasi":
+                await context.bot.edit_message_text(chat_id=message.effective_chat.id,message_id=message.effective_message.id, text="Scegli fermata di _PARTENZA_",reply_markup=await any_markup(),disable_web_page_preview=True,parse_mode='Markdown')
         else:
             await reset(context,message)
 
@@ -100,8 +103,8 @@ async def buttons(message: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 await context.bot.send_message(chat_id=message.effective_chat.id, text="Scegli fermata di _ARRIVO_",reply_markup=await bus_markup(),disable_web_page_preview=True,parse_mode='Markdown')
             elif context.chat_data['tipo_trasporto']=="littorina":
                 await context.bot.send_message(chat_id=message.effective_chat.id, text="Scegli fermata di _ARRIVO_",reply_markup=await tr_markup(),disable_web_page_preview=True,parse_mode='Markdown')
-            # elif context.chat_data['tipo_trasporto']=="qualsiasi":
-            #     await context.bot.send_message(chat_id=message.effective_chat.id, text="Scegli fermata di _ARRIVO_",reply_markup=await any_markup(),disable_web_page_preview=True,parse_mode='Markdown')
+            elif context.chat_data['tipo_trasporto']=="qualsiasi":
+                await context.bot.send_message(chat_id=message.effective_chat.id, text="Scegli fermata di _ARRIVO_",reply_markup=await any_markup(),disable_web_page_preview=True,parse_mode='Markdown')
         else:
             await reset(context,message)
 
@@ -119,7 +122,9 @@ async def buttons(message: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             context.chat_data['ora']=query.data
             await context.bot.delete_message(chat_id=message.effective_chat.id, message_id=message.effective_message.id)
             query_type=context.chat_data['near_function']
-            threading.Thread(target=await find_lines(context,message,query_type)).start() #ricerca linee
+            coroutines= []
+            coroutines.append(find_lines(context,message,query_type))
+            await asyncio.gather(*coroutines)
             #await start(message,context)
         else:
             await reset(context,message)        
