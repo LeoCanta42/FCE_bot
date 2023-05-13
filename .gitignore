@@ -5,3 +5,4 @@ private/
 .vscode/
 .venv/
 __pycache__/
+old_backup/
