@@ -35,7 +35,7 @@ async def reset(context:ContextTypes.DEFAULT_TYPE,message:Update) -> None:
 
 def check_all(s:str) -> bool:
     with sql.connect("fce_lines.db") as connection:
-        if len(connection.cursor().execute("select Nome from Fermate where nomereplace=?",(all_replacing(s),)).fetchall())>0:
+        if len(connection.cursor().execute("select Nome from Fermate where nomereplace like ? || '%'",(all_replacing(s),)).fetchall())>0:
             return True
         else:
             return False
