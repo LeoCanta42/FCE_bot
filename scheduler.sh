@@ -1,7 +1,7 @@
-#!/bin/bash
+##!/bin/bash
 #source .venv/bin/activate
 h=true
-
+python3.10 autocheck.py
 while true; do
         if $h; then
                 kill $PID1

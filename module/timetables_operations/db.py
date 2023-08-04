@@ -32,9 +32,12 @@ def set_db(connection) -> None:
 
 def reset(connection) -> None:
     cursor=connection.cursor()
-    cursor.execute("drop table Tratte")
-    cursor.execute("drop table Fermate")
-    cursor.execute("drop table TratteFermate")
+    try:
+        cursor.execute("drop table Tratte")
+        cursor.execute("drop table Fermate")
+        cursor.execute("drop table TratteFermate")
+    except:
+        print("Errore nel reset database\n")
 
 def insert_fermate(connection) -> None:
     cursor=connection.cursor()
