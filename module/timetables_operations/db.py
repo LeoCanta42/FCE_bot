@@ -12,7 +12,7 @@ def select_db_users(connection) -> list:
     result=cursor.execute("select * from Users order by current_use").fetchall()
     string=""
     for i in result:
-        string+=str(i)+"\n\n"
+        string+="("+str(i[0])+", "+ ((datetime.datetime.strptime(i[1],"%Y-%m-%d %H:%M:%S.%f")).strftime("'%Y-%m-%d %H:%M'"))+")\n\n"
     return string
 
 async def insert_db_user(connection,chatid:str) -> None:
