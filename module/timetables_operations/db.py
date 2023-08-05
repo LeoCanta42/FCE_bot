@@ -115,3 +115,10 @@ def insert_tratte(connection) -> None: #tratte e collegamento fermata-tratta
                                     cursor.execute("insert into TratteFermate(orario,idTratta,idFermata) values(?,?,?)",(str(format_time(str(matrix[i][j]))),int(idt[0]),int(idf[0]),))
                                     print("Inserito "+str(matrix[i][0])+" "+str(matrix[start-1][j])+" "+str(matrix[start-2][j])+" "+str(matrix[i][j])+"\n\n")
 
+def check_dbuser(connection) -> None: #verifica se utenti vecchi, toglie dal db
+    try:
+        time=datetime.datetime.now()
+        cursor=connection.cursor()
+        cursor.execute("delete from Users where current_use < DATE('now','-2 month')").fetchall()
+    except Exception as e:
+        print(e)

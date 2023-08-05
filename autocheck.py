@@ -26,3 +26,5 @@ if __name__ == '__main__':
             db.set_db(connection)
             db.insert_fermate(connection)
             db.insert_tratte(connection)
+    with sql.connect("users.db") as connection:
+        db.check_dbuser(connection)
