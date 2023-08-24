@@ -163,7 +163,7 @@ Tutte le linee da prima all'ora di ARRIVO scelta - permette di avere tutte le li
 
 Esempio di range: se scelgo le 8.00 intendiamo come range fino alle 8.59
 
-Si informano inoltre gli utenti che usando il bot si acconsente a memorizzare il chat_id riferito a questa chat e l'ora dell'ultimo utilizzo, il tutto a scopi puramente statistici e/o per ottenere degli avvisi a seguito di modifiche o altre informazioni""")
+Si informano inoltre gli utenti che usando il bot si acconsente a memorizzare il chat_id riferito a questa chat e l'ora dell'ultimo utilizzo, il tutto a scopi puramente statistici e/o per ottenere degli avvisi a seguito di modifiche o altre informazioni (la memorizzazione é temporanea, se non si utilizza il bot per più di 2 mesi quei dati verranno cancellati automaticamente).""")
 
 async def scraping_messages(message: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if message.message.text not in ["/start","/help","/contributors","/chat_id"]:
