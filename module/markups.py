@@ -4,10 +4,10 @@ path="./module/"
 
 async def general_markup() -> InlineKeyboardMarkup:
     keyboard = [
-        [InlineKeyboardButton("Orario bus", callback_data="1"),
-        InlineKeyboardButton("Orario treni", callback_data="2")],
-        [InlineKeyboardButton("Orario metro", callback_data="3"),
-        InlineKeyboardButton("Controlla linea", callback_data="default")]
+        [InlineKeyboardButton("Documento Bus", callback_data="1"),
+        InlineKeyboardButton("Documento Treni", callback_data="2")],
+        [InlineKeyboardButton("Documento Metro", callback_data="3"),
+        InlineKeyboardButton("Controlla Linea", callback_data="default")]
     ]
     markup = InlineKeyboardMarkup(keyboard)
     return markup

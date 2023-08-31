@@ -42,7 +42,7 @@ def check_all(s:str) -> bool:
     
 async def buttons(message: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = message.callback_query
-    await query.answer()    
+    await query.answer()   
     
     if(query.data == "general"):
         await context.bot.delete_message(chat_id=message.effective_chat.id,message_id=message.effective_message.id)
@@ -137,7 +137,7 @@ async def contributors(message: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 https://github.com/Leonardo0101/FCE_bot.git""")
 
 async def welcome(message: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await context.bot.send_message(chat_id=message.effective_chat.id, text="Benvenuto nel bot per info sulla Ferrovia Circumetnea\nAltri comandi disponibili /help /contributors")
+    await context.bot.send_message(chat_id=message.effective_chat.id, text="Benvenuto nel bot per info sulla Ferrovia Circumetnea.\nUsa controlla linea per personalizzare la tua ricerca!\nAltri comandi disponibili /help /contributors")
     await start(message,context)
 
 async def start(message: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -151,11 +151,11 @@ Una volta non piu' presenti le operazioni (nel caso di fine controllo linea) pot
 In ogni caso per qualsiasi problema, se non sono presenti opzioni e facendo /start ottenete errori, eseguitelo per altre 2 volte e verranno inviate nuovamente le opzioni.
 
 Cosa posso fare:
-Orario bus: invio link pdf orario bus
-Orario treni: invio link pdf orario littorine
-Orario metro: invio link pdf orario metro 
+Documento Bus: invio link pdf orario bus
+Documento Treni: invio link pdf orario littorine
+Documento Metro: invio link pdf orario metro 
 
-Controlla orario vicino: mostra le linee disponibili scegliendo la tipologia di mezzo(bus/littorina), le fermate di partenza e arrivo, la tipologia di ricerca linee ovvero:
+Controlla linea: mostra le linee disponibili scegliendo la tipologia di mezzo(bus/littorina), le fermate di partenza e arrivo, la tipologia di ricerca linee ovvero:
 Linee con PARTENZA vicino l'ora scelta - permette di avere tutte le linee in cui la partenza e' nel range di quell'ora scelta 
 Linee con ARRIVO vicino l'ora scelta - permette di avere tutte le linee in cui l'arrivo e' nel range di quell'ora scelta
 Tutte le linee dall'ora di PARTENZA scelta in poi - permette di avere tutte le linee in cui la partenza e' nel range da quell'ora scelta in poi
