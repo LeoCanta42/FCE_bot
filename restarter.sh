@@ -1,4 +1,6 @@
 #!/bin/bash
+startpy=$(head -n 1 ~/FCE_bot/pyvers.txt)
+
 PIDs=( $(pgrep python) )
 for i in "${PIDs[@]}"
 do :
@@ -12,10 +14,10 @@ do :
 done
 
 if [ $1 = 'restart' ]; then
-    /bin/bash scheduler.sh &
-    #nohup solo quando in ssh
+    /bin/bash ~/FCE_bot/scheduler.sh &
 fi
 
 if [ $1 = 'pause' ]; then
-    python3.9 bot_pause_messages.py &
+    source ~/FCE_bot/.venv/bin/activate
+    eval "$startpy ~/FCE_bot/bot_pause_messages.py &"
 fi

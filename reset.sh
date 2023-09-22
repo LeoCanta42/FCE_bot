@@ -1,12 +1,14 @@
 #!/bin/bash
-rm users.db
-rm module/news_check/updated_news.html
-echo "" > module/urls1.txt
-echo "" > module/urls2.txt
-echo "" > module/news_check/updated_news.html
-rm -r module/timetables_operations/bus
-rm -r module/timetables_operations/littorina
-mkdir module/timetables_operations/bus
-mkdir module/timetables_operations/littorina
-python3.10 create_users_db.py
-python3.10 autocheck.py
+startpy=$(head -n 1 ~/FCE_bot/pyvers.txt)
+
+rm ~/FCE_bot/users.db
+rm ~/FCE_bot/module/news_check/updated_news.html
+echo "" > ~/FCE_bot/module/urls1.txt
+echo "" > ~/FCE_bot/module/urls2.txt
+echo "" > ~/FCE_bot/module/news_check/updated_news.html
+rm -r ~/FCE_bot/module/timetables_operations/bus
+rm -r ~/FCE_bot/module/timetables_operations/littorina
+mkdir ~/FCE_bot/module/timetables_operations/bus
+mkdir ~/FCE_bot/module/timetables_operations/littorina
+eval "$startpy ~/FCE_bot/create_users_db.py"
+eval "$startpy ~/FCE_bot/autocheck.py"
