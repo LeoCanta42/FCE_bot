@@ -6,7 +6,8 @@ import time
 import asyncio
 
 import os
-os.chdir("/home/user/FCE_bot")
+home=os.environ['HOME']
+os.chdir(home+"/FCE_bot")
 
 token=str(open("./module/private/news_fcebot_token.txt","r").read()).strip()
 bot=Bot(token=token)

@@ -6,7 +6,8 @@ from time import sleep
 #from module.timetables_operations.calculate_times import find_lines2 #see all lines| just for debug#
 
 import os
-os.chdir("/home/user/FCE_bot")
+home=os.environ['HOME']
+os.chdir(home+"/FCE_bot")
 
 token = str(open('./module/private/fcebot_token.txt','r').read()).strip()
 app= ApplicationBuilder().token(token).build()
