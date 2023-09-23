@@ -7,7 +7,7 @@ from telegram.ext import ContextTypes
 from module.timetables_operations.extract_excel import bus_workbooks,train_workbooks
 import sqlite3 as sql
 import threading
-path="./module/timetables_operations/"
+path="~/FCE_bot/module/timetables_operations/"
 
 
 #primo select trova tutte le destinazioni raggiungibili dalla partenza passata

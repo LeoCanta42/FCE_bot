@@ -8,7 +8,7 @@ from time import sleep
 import os
 # os.chdir("/home/pi/FCE_bot")
 
-token = str(open('./module/private/fcebot_token.txt','r').read()).strip()
+token = str(open('~/FCE_bot/module/private/fcebot_token.txt','r').read()).strip()
 app= ApplicationBuilder().token(token).build()
 app.add_handlers(add_handlers()) 
 
@@ -18,7 +18,7 @@ def mainbot() -> None :
     except Exception as e:
         print(e)
         sleep(30)
-        os.system('bash /home/leo/Desktop/FCE_bot/restarter.sh restart &')
+        os.system('bash ~/FCE_bot/restarter.sh restart &')
 
 if __name__ == '__main__':
     mainbot()

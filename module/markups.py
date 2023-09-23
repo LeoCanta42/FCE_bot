@@ -1,6 +1,6 @@
 from telegram import InlineKeyboardButton,InlineKeyboardMarkup
 import sqlite3 as sql
-path="./module/"
+path="~/FCE_bot/module/"
 
 async def general_markup() -> InlineKeyboardMarkup:
     keyboard = [
