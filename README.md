@@ -10,4 +10,4 @@ To start the bot you will have to create a folder into "module" called "private"
 
 You have to start "create_users_db.py" and now you can use "scheduler.sh" to start your bots.
 
-To stop yout bots or restart them you can use "restarter.sh" passing parameters restart | stop | pause (this one is just for starting the pause bot, that sends a message alerting that the bot is in manteinance).
+To stop your bots or restart them you can use "restarter.sh" passing parameters restart | stop | pause (this one is just for starting the pause bot, that sends a message alerting that the bot is in manteinance).
