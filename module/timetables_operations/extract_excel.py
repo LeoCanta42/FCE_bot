@@ -4,7 +4,7 @@ from module.timetables_operations.times_op import isTimeFormat,isTimeFormatH
 import os
 import asyncio
 
-path="~/FCE_bot/module/timetables_operations/"
+path="./module/timetables_operations/"
 
 def find_files(tipo:str) -> list:
     arr=[]

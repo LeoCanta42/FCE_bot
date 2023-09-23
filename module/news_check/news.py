@@ -1,7 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 
-path="~/FCE_bot/module/news_check/"
+path="./module/news_check/"
 
 def indexes(page) -> list:
     arr=[]

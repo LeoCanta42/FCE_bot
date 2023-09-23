@@ -5,17 +5,17 @@ import schedule
 import time
 import asyncio
 
-# import os
-# os.chdir("/home/pi/FCE_bot")
+import os
+os.chdir("/home/user/FCE_bot")
 
-token=str(open("~/FCE_bot/module/private/news_fcebot_token.txt","r").read()).strip()
+token=str(open("./module/private/news_fcebot_token.txt","r").read()).strip()
 bot=Bot(token=token)
 
 #per ottenere chat id
 #https://api.telegram.org/bot'bottoken'/sendMessage?chat_id=@'channel_name_public'&text=123
 #nella risposta e' contenuto il chat id del canale, una volta preso si puo' reimpostare il canale a privato
 
-channel_chat_id=str(open("~/FCE_bot/module/private/channel_id.txt","r").read()).strip()
+channel_chat_id=str(open("./module/private/channel_id.txt","r").read()).strip()
 
 async def sender(bot:Bot,chat:str) -> None:
     inviare=check_news()
@@ -27,7 +27,7 @@ async def sender(bot:Bot,chat:str) -> None:
             new_page=requests.get("https://www.circumetnea.it/category/news/")
             ind=indexes(new_page)
             new_page=new_page.text[ind[0]:ind[1]]
-            with open("~/FCE_bot/module/news_check/updated_news.html","w") as f: #aggiorno la pagina con le nuove notizie
+            with open("./module/news_check/updated_news.html","w") as f: #aggiorno la pagina con le nuove notizie
                 f.write(new_page)
         else:
             return

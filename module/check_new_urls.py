@@ -7,7 +7,7 @@ import asyncio
 def check(type:int) -> bool: #1 littorina 2 bus
     h=False
     for urls in asyncio.run(getdownload_urls(type)):
-        if urls not in open("~/FCE_bot/module/urls"+str(type)+".txt","r").read().strip():
+        if urls not in open("./module/urls"+str(type)+".txt","r").read().strip():
             h=True
     if type==1: t="littorina"
     elif type==2: t="bus"
@@ -17,11 +17,11 @@ def check(type:int) -> bool: #1 littorina 2 bus
 
 def clean_folders(type:int) -> None:
     if type==1:
-        shutil.rmtree("~/FCE_bot/module/timetables_operations/littorina")
-        os.mkdir("~/FCE_bot/module/timetables_operations/littorina")
+        shutil.rmtree("./module/timetables_operations/littorina")
+        os.mkdir("./module/timetables_operations/littorina")
     elif type==2:
-        shutil.rmtree("~/FCE_bot/module/timetables_operations/bus")
-        os.mkdir("~/FCE_bot/module/timetables_operations/bus")
+        shutil.rmtree("./module/timetables_operations/bus")
+        os.mkdir("./module/timetables_operations/bus")
 
 
 def download_after_check() -> bool:
@@ -30,13 +30,13 @@ def download_after_check() -> bool:
         if(check(type)):
             clean_folders(type)
             i=0
-            with open("~/FCE_bot/module/urls"+str(type)+".txt","w") as f:
+            with open("./module/urls"+str(type)+".txt","w") as f:
                 for url in  asyncio.run(getdownload_urls(type)):
                     if type==1:
                         t="littorina"
                     elif type==2:
                         t="bus"
-                    download_converted(url,"~/FCE_bot/module/timetables_operations/"+t+"/orario"+str(i)+".xlsx")
+                    download_converted(url,"./module/timetables_operations/"+t+"/orario"+str(i)+".xlsx")
                     f.write(str(url)+"\n")
                     i+=1
             locations_to_file(t)

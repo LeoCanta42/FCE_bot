@@ -4,10 +4,10 @@ import sqlite3 as sql
 
 from module.timetables_operations import db
 from module.timetables_operations.extract_excel import load, locations_to_file
-# import os
-# os.chdir("/home/pi/FCE_bot")
+import os
+os.chdir("/home/user/FCE_bot")
 
-token=str(open("~/FCE_bot/module/private/fcebot_token.txt","r").read()).strip()
+token=str(open("./module/private/fcebot_token.txt","r").read()).strip()
 bot=Bot(token=token)
 tosend='''
 

@@ -41,9 +41,9 @@ def reset(connection) -> None:
 
 def insert_fermate(connection) -> None:
     cursor=connection.cursor()
-    file=open("~/FCE_bot/module/timetables_operations/bus/locations.txt","r")
+    file=open("./module/timetables_operations/bus/locations.txt","r")
     bus_loc=file.readlines()
-    file=open("~/FCE_bot/module/timetables_operations/littorina/locations.txt","r")
+    file=open("./module/timetables_operations/littorina/locations.txt","r")
     train_loc=file.readlines()
     
     for i in range(len(bus_loc)):
