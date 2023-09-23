@@ -17,8 +17,7 @@ while true; do
 	if [ "$(date '+%H:%M')" = "01:00" ]; then #all'1:00 effettuo check di nuovi orari	
 		kill $PID1
 		kill $PID2
-  		git pull
-		eval "$startpy ~/FCE_bot/FCE_bot/bot_pause_messages.py &" #quando bot in pausa
+		eval "$startpy ~/FCE_bot/FCE_bot/bot_pause_messages.py &" #bot quando bot in pausa
 		PID1=$!
 		eval "$startpy ~/FCE_bot/autocheck.py"
 		h=true #faccio ripartire il bot
