@@ -16,28 +16,28 @@ path="~/FCE_bot/module/timetables_operations/"
 
 async def find_lines(context:ContextTypes.DEFAULT_TYPE,message:Update,query_type:str) -> None: 
     #desiderata ora di partenza
-    query_findpartenza='''select t1.orario,t2.orario,tr.Mezzo,f1.Nome,f2.Nome
+    query_findpartenza='''select t1.orario,t2.orario,tr.Mezzo,f1.Nome,f2.Nome, tr.ritardo, t1.id
                     from TratteFermate t1,TratteFermate t2, Fermate as f1,Fermate as f2, Tratte as tr
                     where t1.idTratta=t2.idTratta and t1.idFermata=f1.idFermata and f1.nomereplace like ? || '%'
                     and t2.idFermata=f2.idFermata and f2.nomereplace like ? || '%' and f1.nomereplace!=f2.nomereplace and
                     tr.idTratta=t1.idTratta  and t2.orario>t1.orario and (strftime('%H.%M',?)-t1.orario)<=0 and (strftime('%H.%M',?)-t1.orario)>=0
     '''
     #desiderata ora di arrivo
-    query_finddestinazione='''select t1.orario, t2.orario,tr.Mezzo,f1.Nome,f2.Nome
+    query_finddestinazione='''select t1.orario, t2.orario,tr.Mezzo,f1.Nome,f2.Nome, tr.ritardo, t1.id
                     from TratteFermate t1,TratteFermate t2, Fermate as f1,Fermate as f2, Tratte as tr
                     where t1.idTratta=t2.idTratta and t1.idFermata=f1.idFermata and f1.nomereplace like ? || '%' 
                     and t2.idFermata=f2.idFermata and f2.nomereplace like ? || '%' and f1.nomereplace!=f2.nomereplace and
                     tr.idTratta=t1.idTratta  and t2.orario>t1.orario and (strftime('%H.%M',?)-t2.orario)<=0 and (strftime('%H.%M',?)-t2.orario)>=0
     '''
     #da ora desiderata in poi partenza
-    query_findpartenza2='''select t1.orario, t2.orario,tr.Mezzo,f1.Nome,f2.Nome
+    query_findpartenza2='''select t1.orario, t2.orario,tr.Mezzo,f1.Nome,f2.Nome, tr.ritardo, t1.id
                     from TratteFermate t1,TratteFermate t2, Fermate as f1,Fermate as f2, Tratte as tr
                     where t1.idTratta=t2.idTratta and t1.idFermata=f1.idFermata and f1.nomereplace like ? || '%' 
                     and t2.idFermata=f2.idFermata and f2.nomereplace like ? || '%' and f1.nomereplace!=f2.nomereplace and
                     tr.idTratta=t1.idTratta  and t2.orario>t1.orario and (strftime('%H.%M',?)-t1.orario)<=0
     '''
     #da ora desiderata arrivo o prima
-    query_finddestinazione2='''select t1.orario, t2.orario,tr.Mezzo,f1.Nome,f2.Nome
+    query_finddestinazione2='''select t1.orario, t2.orario,tr.Mezzo,f1.Nome,f2.Nome, tr.ritardo, t1.id
                     from TratteFermate t1,TratteFermate t2, Fermate as f1,Fermate as f2, Tratte as tr
                     where t1.idTratta=t2.idTratta and t1.idFermata=f1.idFermata and f1.nomereplace like ? || '%' 
                     and t2.idFermata=f2.idFermata and f2.nomereplace like ? || '%' and f1.nomereplace!=f2.nomereplace and
@@ -136,7 +136,10 @@ async def find_lines(context:ContextTypes.DEFAULT_TYPE,message:Update,query_type
                 if not_direct: #se deve fare la ricerca con incroci ha un formato diverso l'output
                     string+="_Linea non diretta_\n"+("*"+str(i[4])+"*")+"\n"+format_time(str(i[1]))+" - "+str(i[0])+"\n"+format_time(str(i[3]))+" - "+str(i[2])+"\n*"+str(i[8])+"*\n"+format_time(str(i[5]))+" - "+str(i[2])+"\n"+format_time(str(i[7]))+" - "+str(i[6])+"\n\n"
                 else:
-                    string+="_Linea diretta_\n"+("*"+str(i[2])+"*")+"\n"+format_time(str(i[0]))+" - "+str(i[3])+"\n"+format_time(str(i[1]))+" - "+str(i[4])+"\n\n"
+                    string+="_Linea diretta_\nID tratta:"+str(i[6])+"\n"+("*"+str(i[2])+"*")+"\n"+format_time(str(i[0]))+" - "+str(i[3])+"\n"+format_time(str(i[1]))+" - "+str(i[4])+"\n"
+                    if i[5]>0:
+                        string+="Ritardo segnalato: "+str(i[5])+"min"
+                    string+="\n\n"
         else:
             string="Linea non esistente"
         

@@ -7,7 +7,8 @@ async def general_markup() -> InlineKeyboardMarkup:
         [InlineKeyboardButton("Documento Bus", callback_data="1"),
         InlineKeyboardButton("Documento Treni", callback_data="2")],
         [InlineKeyboardButton("Documento Metro", callback_data="3"),
-        InlineKeyboardButton("Controlla Linea", callback_data="default")]
+        InlineKeyboardButton("Controlla Linea", callback_data="default")],
+        [InlineKeyboardButton("Segnala Ritardo", callback_data="ritardo")]
     ]
     markup = InlineKeyboardMarkup(keyboard)
     return markup

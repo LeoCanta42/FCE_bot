@@ -15,6 +15,18 @@ def select_db_users(connection) -> list:
         string+="("+str(i[0])+", "+ ((datetime.datetime.strptime(i[1],"%Y-%m-%d %H:%M:%S.%f")).strftime("'%Y-%m-%d %H:%M'"))+")\n\n"
     return string
 
+async def insert_ritardo(connection,idtf:str,context:ContextTypes.DEFAULT_TYPE,message:Update) -> None:
+    cursor=connection.cursor()
+    timesendmessage=message.message.date.strftime("%H.%M")
+    
+    check=cursor.execute("select idTratta,orario from TratteFermate where id=? and (strftime('%H.%M',?)-orario)>0",(idtf,timesendmessage,)).fetchone()
+    if len(check)<=0:
+        await context.bot.send_message(chat_id=message.effective_chat.id,text="ID tratta inserito non valido.\nVerificare ID tratta effettuando la ricerca della linea desiderata")
+    else:
+        temporitardo=strftime((timesendmessage-strftime(check[1],'%H.%M')),'%M')
+        cursor.execute("update Tratte set ritardo=strftime(?,'%M') where idTratta=?",(temporitardo,check[0],))
+        await context.bot.send_message(chat_id=message.effective_chat.id,text="Ritardo segnalato!")
+
 async def insert_db_user(connection,chatid:str) -> None:
     time=datetime.datetime.now()
     cursor=connection.cursor()
@@ -26,7 +38,7 @@ async def insert_db_user(connection,chatid:str) -> None:
 
 def set_db(connection) -> None:
     cursor=connection.cursor()
-    cursor.execute("create table Tratte(idTratta INTEGER PRIMARY KEY AUTOINCREMENT,CodiceTratta TEXT, Mezzo TEXT)")
+    cursor.execute("create table Tratte(idTratta INTEGER PRIMARY KEY AUTOINCREMENT,CodiceTratta TEXT, Mezzo TEXT, ritardo TIME)")
     cursor.execute("create table Fermate(idFermata INTEGER PRIMARY KEY AUTOINCREMENT, Nome TEXT,nomereplace TEXT,bus BOOL, littorina BOOL)")
     cursor.execute("create table TratteFermate(id INTEGER PRIMARY KEY AUTOINCREMENT, orario TIME, idFermata INTEGER, idTratta INTEGER, foreign key (idFermata) references Fermate(idFermata),foreign key (idTratta) references Tratte(idTratta))")
 

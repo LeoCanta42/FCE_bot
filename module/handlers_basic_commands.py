@@ -4,7 +4,7 @@ from telegram.ext import ContextTypes,CommandHandler,CallbackQueryHandler, Messa
 from module.retrieve_webdata import getdownload_urls
 from module.markups import general_markup,bus_markup,tr_markup,transport_markup,times_markup,near_time_markup,any_markup
 from module.timetables_operations.calculate_times import find_lines
-from module.timetables_operations.db import insert_db_user,select_db_users
+from module.timetables_operations.db import insert_db_user,select_db_users, insert_ritardo
 from module.timetables_operations.extract_excel import all_replacing
 import sqlite3 as sql
 import asyncio
@@ -127,7 +127,20 @@ async def buttons(message: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             await asyncio.gather(*coroutines)
             #await start(message,context)
         else:
-            await reset(context,message)        
+            await reset(context,message)
+    
+    elif(context.chat_data['segnalaritardo']==1):
+        context.chat_data['segnalaritardo']=0
+        with sql.connect("fce_lines.db") as connection:
+            await insert_ritardo(connection,query.data,context,message)
+    
+    elif(query.data == "ritardo"):
+        await context.bot.delete_message(chat_id=message.effective_chat.id,message_id=message.effective_message.id) 
+        context.chat_data['segnalaritardo']=1
+        await context.bot.send_message(chat_id=message.effective_chat.id,text="Manda l'ID della tratta che vuoi segnalare")
+
+    
+    
 
 
 async def contributors(message: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -142,6 +155,7 @@ async def welcome(message: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def start(message: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     context.chat_data['counter']=0
+    context.chat_data['segnalaritardo']=0
     await context.bot.send_message(chat_id=message.effective_chat.id, text="Cosa posso fare per te ?",reply_markup=await general_markup())
 
 async def help(message: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -166,7 +180,7 @@ Esempio di range: se scelgo le 8.00 intendiamo come range fino alle 8.59
 Si informano inoltre gli utenti che usando il bot si acconsente a memorizzare il chat_id riferito a questa chat e l'ora dell'ultimo utilizzo, il tutto a scopi puramente statistici e/o per ottenere degli avvisi a seguito di modifiche o altre informazioni (la memorizzazione é temporanea, se non si utilizza il bot per più di 2 mesi quei dati verranno cancellati automaticamente).""")
 
 async def scraping_messages(message: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if message.message.text not in ["/start","/help","/contributors","/chat_id"]:
+    if message.message.text not in ["/start","/help","/contributors","/chat_id"] and context.chat_data['segnalaritardo']!=1:
         await context.bot.delete_message(chat_id=message.effective_chat.id,message_id=message.effective_message.id)
     if message.message.text == "/start":
         
