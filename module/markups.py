@@ -13,6 +13,13 @@ async def general_markup() -> InlineKeyboardMarkup:
     markup = InlineKeyboardMarkup(keyboard)
     return markup
 
+async def backmarkup() -> InlineKeyboardMarkup:
+    keyboard = [
+        [InlineKeyboardButton("<-- Back   ",callback_data="general")]
+    ]
+    markup = InlineKeyboardMarkup(keyboard)
+    return markup
+
 async def near_time_markup() -> InlineKeyboardMarkup:
     keyboard = [
         [InlineKeyboardButton("Linee con PARTENZA vicino l'ora scelta", callback_data="near_partenza")],

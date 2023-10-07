@@ -137,7 +137,7 @@ async def find_lines(context:ContextTypes.DEFAULT_TYPE,message:Update,query_type
                     string+="_Linea non diretta_\n"+("*"+str(i[4])+"*")+"\n"+format_time(str(i[1]))+" - "+str(i[0])+"\n"+format_time(str(i[3]))+" - "+str(i[2])+"\n*"+str(i[8])+"*\n"+format_time(str(i[5]))+" - "+str(i[2])+"\n"+format_time(str(i[7]))+" - "+str(i[6])+"\n\n"
                 else:
                     string+="_Linea diretta_\nID tratta:"+str(i[6])+"\n"+("*"+str(i[2])+"*")+"\n"+format_time(str(i[0]))+" - "+str(i[3])+"\n"+format_time(str(i[1]))+" - "+str(i[4])+"\n"
-                    if i[5]>0:
+                    if i[5]!=None and i[5]>0:
                         string+="Ritardo segnalato: "+str(i[5])+"min"
                     string+="\n\n"
         else:

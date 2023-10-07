@@ -1,5 +1,7 @@
 from module.timetables_operations.extract_excel import bus_workbooks,train_workbooks,extract,dimensions,all_replacing
 from module.timetables_operations.times_op import isTimeFormat,isTimeFormatH,format_time
+from telegram.ext import ContextTypes
+from telegram import Update
 import datetime
 import asyncio
 
@@ -17,15 +19,29 @@ def select_db_users(connection) -> list:
 
 async def insert_ritardo(connection,idtf:str,context:ContextTypes.DEFAULT_TYPE,message:Update) -> None:
     cursor=connection.cursor()
-    timesendmessage=message.message.date.strftime("%H.%M")
-    
-    check=cursor.execute("select idTratta,orario from TratteFermate where id=? and (strftime('%H.%M',?)-orario)>0",(idtf,timesendmessage,)).fetchone()
-    if len(check)<=0:
-        await context.bot.send_message(chat_id=message.effective_chat.id,text="ID tratta inserito non valido.\nVerificare ID tratta effettuando la ricerca della linea desiderata")
-    else:
-        temporitardo=strftime((timesendmessage-strftime(check[1],'%H.%M')),'%M')
-        cursor.execute("update Tratte set ritardo=strftime(?,'%M') where idTratta=?",(temporitardo,check[0],))
-        await context.bot.send_message(chat_id=message.effective_chat.id,text="Ritardo segnalato!")
+    timesendmessage=datetime.datetime.now().strftime("%H.%M")
+
+    try:
+        if int(idtf)<0 or int(idtf)>5000: #forse bisognera' incrementare, non credo
+            await context.bot.send_message(chat_id=message.effective_chat.id,text="ID tratta inserito non valido.\nVerificare ID tratta effettuando la ricerca della linea desiderata.")
+        else:
+            check=cursor.execute("select idTratta,orario from TratteFermate where id=? and strftime('%H.%M',?)-strftime('%H.%M',orario)>0 and strftime('%H.%M',?)-strftime('%H.%M',orario)<=59",(idtf,timesendmessage,timesendmessage,)).fetchone() 
+            if check==None:
+                await context.bot.send_message(chat_id=message.effective_chat.id,text="ID tratta inserito non valido.\nVerificare ID tratta effettuando la ricerca della linea desiderata. Si ricorda che si possono segnalare ritardi fino ad un massimo di 59minuti.")
+            else:
+                temporitardo=datetime.datetime.strptime(format_time(str(timesendmessage)),'%H.%M')-datetime.datetime.strptime(format_time(str(check[1])),'%H.%M')
+                if temporitardo.seconds>3540: #secondi di 59Minuti
+                    temporitardo.seconds=3540 #se tempo ritardo superiore a un'ora setto il massimo 59min
+                cursor.execute("update Tratte set ritardo=strftime('%M',?) where idTratta=?",(datetime.datetime.strptime(str(temporitardo),'%H:%M:%S'),check[0],))
+                await context.bot.send_message(chat_id=message.effective_chat.id,text="Ritardo segnalato!")
+    except Exception as e:
+        await context.bot.send_message(chat_id=message.effective_chat.id,text="ID tratta inserito non valido.\nVerificare ID tratta effettuando la ricerca della linea desiderata.")
+        print(str(e))
+
+
+async def reset_ritardo(connection):
+    cursor=connection.cursor()
+    cursor.execute("update T set T.ritardo=0 from Tratte T")
 
 async def insert_db_user(connection,chatid:str) -> None:
     time=datetime.datetime.now()
