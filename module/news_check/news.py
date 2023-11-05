@@ -82,3 +82,4 @@ def check_news() -> list:
                 to_send.append(stringa)
         
         return to_send
+

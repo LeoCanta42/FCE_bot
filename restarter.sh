@@ -14,7 +14,7 @@ do :
 done
 
 if [ $1 = 'restart' ]; then
-    /bin/bash ~/FCE_bot/scheduler.sh &
+    /bin/bash ~/FCE_bot/scheduler.sh check &
 fi
 
 if [ $1 = 'pause' ]; then

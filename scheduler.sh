@@ -3,7 +3,10 @@ source ~/FCE_bot/.venv/bin/activate
 h=true
 startpy=$(head -n 1 ~/FCE_bot/pyvers.txt)
 
-eval "$startpy ~/FCE_bot/autocheck.py"
+if [ $1 = 'check' ]; then
+    eval "$startpy ~/FCE_bot/autocheck.py"
+fi
+
 while true; do
 	if $h; then
 		kill $PID1

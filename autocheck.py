@@ -16,15 +16,15 @@ def job() -> bool:
 
 
 if __name__ == '__main__':
-    if job():
-        load("bus")
-        load("littorina")
-        locations_to_file("bus")
-        locations_to_file("littorina")
-        with sql.connect("fce_lines.db") as connection:
-            db.reset(connection)
-            db.set_db(connection)
-            db.insert_fermate(connection)
-            db.insert_tratte(connection)
+    job()
+    load("bus")
+    load("littorina")
+    locations_to_file("bus")
+    locations_to_file("littorina")
+    with sql.connect("fce_lines.db") as connection:
+        db.reset(connection)
+        db.set_db(connection)
+        db.insert_fermate(connection)
+        db.insert_tratte(connection)
     with sql.connect("users.db") as connection:
         db.check_dbuser(connection)
