@@ -5,3 +5,4 @@ requests==2.25.1
 python-telegram-bot==20.1
 telegram==0.0.1
 schedule==1.1.0
+telegram-handler==1.4.4

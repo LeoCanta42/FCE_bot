@@ -1,6 +1,8 @@
 import logging
+import threading
 from telegram import Update
 from telegram.ext import ContextTypes,CommandHandler,CallbackQueryHandler, MessageHandler
+from module.fixed_send_message import fix_message
 from module.retrieve_webdata import getdownload_urls
 from module.markups import general_markup,bus_markup,tr_markup,transport_markup,times_markup,near_time_markup,any_markup
 from module.timetables_operations.calculate_times import find_lines
@@ -9,22 +11,22 @@ from module.timetables_operations.extract_excel import all_replacing
 import sqlite3 as sql
 import asyncio
 
-
 logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
+    level=logging.INFO,
+    format='%(asctime)s | %(levelname)s | %(name)s | %(message)s',
+    filename="log.txt"
 )
 
 def add_handlers() -> list: #defining handlers
     handlers = [
         #CommandHandler('start',welcome),
         CommandHandler('see_user',see_user),
+        CommandHandler('send_log',send_log),
         CommandHandler('help',help),
         CommandHandler('contributors',contributors),
         CommandHandler('chat_id',chat_id),
         CallbackQueryHandler(buttons),
         MessageHandler(filters=None,callback=scraping_messages)
-        
     ]
     return handlers
 
@@ -188,6 +190,16 @@ async def see_user(message: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if str(message.effective_user.id) in (open("./module/private/my_userid.txt","r").read()).strip():
         with sql.connect("users.db") as connection:
             await context.bot.send_message(message.effective_chat.id,text=str(select_db_users(connection)))
+
+async def send_log(message: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if str(message.effective_user.id) in (open("./module/private/my_userid.txt","r").read()).strip():
+        logchannel=(open("./module/private/logchannel.txt","r").read()).strip()
+
+        text=str(open("./log.txt","r").read())
+        to_send=fix_message(text)
+        
+        for msg in to_send: #per ogni elemento nella stringa inviamo un messaggio
+            threading.Thread(target=await context.bot.send_message(chat_id=logchannel,text=msg))
 
 async def chat_id(message: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await context.bot.send_message(message.effective_chat.id,text="Ecco l'id di questa chat: "+str(message.effective_chat.id))

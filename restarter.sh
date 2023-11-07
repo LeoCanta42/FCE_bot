@@ -14,6 +14,7 @@ do :
 done
 
 if [ $1 = 'restart' ]; then
+    mv ~/FCE_bot/log.txt ~/FCE_bot/log.txt.old
     /bin/bash ~/FCE_bot/scheduler.sh check &
 fi
 
