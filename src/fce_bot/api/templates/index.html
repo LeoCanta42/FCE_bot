@@ -40,6 +40,12 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100%;
+            max-width: 100vw;
+            overflow-x: hidden;
+            -webkit-text-size-adjust: 100%;
+        }
         body {
             font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
             background-color: var(--bg);
@@ -52,10 +58,11 @@
         .navbar {
             background: #ffffff;
             border-bottom: 1px solid var(--border);
-            padding: 12px 16px;
+            padding: 10px 16px;
             position: sticky;
             top: 0;
             z-index: 50;
+            backdrop-filter: blur(8px);
         }
         .nav-container {
             max-width: 1080px;
@@ -63,59 +70,71 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 12px;
+            gap: 10px;
+            flex-wrap: nowrap;
         }
         .brand {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             text-decoration: none;
             color: var(--text-main);
             font-weight: 700;
-            font-size: 1.15rem;
+            font-size: 1.12rem;
+            min-width: 0;
+            flex-shrink: 1;
+        }
+        .brand-text-container {
+            min-width: 0;
+            line-height: 1.25;
         }
         .brand-logo {
-            width: 38px;
-            height: 38px;
+            width: 36px;
+            height: 36px;
             border-radius: 9px;
             display: block;
             flex-shrink: 0;
             box-shadow: 0 2px 6px rgba(0,0,0,0.12);
         }
         .pwa-banner-logo {
-            width: 46px;
-            height: 46px;
-            border-radius: 11px;
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
             display: block;
             flex-shrink: 0;
             box-shadow: 0 2px 6px rgba(0,0,0,0.15);
         }
         .brand-sub {
-            font-size: 0.78rem;
+            font-size: 0.76rem;
             color: var(--text-muted);
             font-weight: 500;
             display: block;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .nav-actions {
             display: flex;
             align-items: center;
             gap: 8px;
+            flex-shrink: 0;
         }
         .btn-pwa {
             background: #dc2626;
             color: #ffffff;
             border: none;
-            padding: 8px 14px;
+            padding: 7px 13px;
             border-radius: 999px;
-            font-size: 0.86rem;
+            font-size: 0.84rem;
             font-weight: 700;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
             transition: all 0.2s;
-            box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25);
+            box-shadow: 0 2px 6px rgba(220, 38, 38, 0.22);
             white-space: nowrap;
+            flex-shrink: 0;
         }
         .btn-pwa:hover {
             background: #b91c1c;
@@ -125,17 +144,56 @@
             background-color: #229ED9;
             color: white;
             text-decoration: none;
-            padding: 8px 14px;
+            padding: 7px 13px;
             border-radius: 999px;
-            font-size: 0.86rem;
+            font-size: 0.84rem;
             font-weight: 600;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            transition: opacity 0.2s;
+            gap: 5px;
+            transition: all 0.2s;
             white-space: nowrap;
+            flex-shrink: 0;
         }
-        .btn-telegram:hover { opacity: 0.9; }
+        .btn-telegram:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        .btn-text-med, .btn-text-short { display: none; }
+        .btn-text-full { display: inline; }
+
+        @media (max-width: 768px) {
+            .btn-text-full { display: none; }
+            .btn-text-med { display: inline; }
+            .btn-text-short { display: none; }
+            .btn-telegram, .btn-pwa {
+                padding: 6px 11px;
+                font-size: 0.82rem;
+            }
+        }
+        @media (max-width: 480px) {
+            .btn-text-full { display: none; }
+            .btn-text-med { display: none; }
+            .btn-text-short { display: inline; }
+            .btn-telegram, .btn-pwa {
+                padding: 6px 9px;
+                font-size: 0.78rem;
+            }
+            .brand-logo {
+                width: 32px;
+                height: 32px;
+            }
+            .brand {
+                font-size: 0.98rem;
+                gap: 8px;
+            }
+        }
+        @media (max-width: 360px) {
+            .brand-sub { display: none; }
+            .brand { font-size: 0.9rem; gap: 6px; }
+            .btn-telegram, .btn-pwa {
+                padding: 5px 7px;
+                font-size: 0.74rem;
+            }
+        }
 
         /* PWA Install Banner */
         .pwa-banner {
@@ -218,6 +276,15 @@
             padding: 24px;
             box-shadow: 0 20px 25px -5px rgba(0,0,0,0.25);
             animation: modalFadeIn 0.2s ease-out;
+            max-height: 90vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        @media (max-width: 480px) {
+            .modal-card {
+                padding: 18px 16px;
+                border-radius: 14px;
+            }
         }
         @keyframes modalFadeIn {
             from { opacity: 0; transform: scale(0.95); }
@@ -309,7 +376,7 @@
         .transport-pills {
             display: flex;
             gap: 8px;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             flex-wrap: wrap;
         }
         .pill-btn {
@@ -322,21 +389,27 @@
             color: var(--text-muted);
             cursor: pointer;
             transition: all 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .pill-btn:active {
+            transform: scale(0.97);
         }
         .pill-btn.active {
             background: var(--primary);
             color: white;
             border-color: var(--primary);
+            box-shadow: 0 2px 6px rgba(158, 27, 27, 0.25);
         }
         .transport-hint {
-            font-size: 0.85rem;
+            font-size: 0.84rem;
             color: var(--text-muted);
-            margin-top: -8px;
-            margin-bottom: 20px;
-            padding: 8px 12px;
+            margin-top: -6px;
+            margin-bottom: 18px;
+            padding: 9px 12px;
             background: #f8fafc;
             border-left: 3px solid var(--primary);
             border-radius: 6px;
+            line-height: 1.45;
         }
 
         /* Search Form Layout */
@@ -350,10 +423,13 @@
         @media (max-width: 768px) {
             .route-row {
                 grid-template-columns: 1fr;
+                gap: 8px;
             }
             .swap-col {
                 text-align: center;
                 margin: -4px 0;
+                display: flex;
+                justify-content: center;
             }
         }
         .input-group {
@@ -386,6 +462,11 @@
             outline: none;
             -webkit-appearance: none;
         }
+        .select-input {
+            padding-right: 38px;
+            background: #ffffff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E") no-repeat right 12px center / 16px;
+            cursor: pointer;
+        }
         .text-input:focus, .select-input:focus {
             border-color: var(--primary);
             box-shadow: 0 0 0 3px rgba(158, 27, 27, 0.12);
@@ -396,8 +477,8 @@
             border: 1px solid var(--border);
             color: var(--text-main);
             border-radius: 50%;
-            width: 48px;
-            height: 48px;
+            width: 44px;
+            height: 44px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -405,10 +486,22 @@
             font-size: 1.25rem;
             transition: all 0.2s;
             margin: 0 auto;
+            -webkit-tap-highlight-color: transparent;
         }
         .btn-swap:hover {
             background: #e2e8f0;
             transform: rotate(180deg);
+        }
+        .btn-swap:active {
+            transform: scale(0.9);
+        }
+        @media (max-width: 768px) {
+            .btn-swap {
+                transform: rotate(90deg);
+            }
+            .btn-swap:hover {
+                transform: rotate(270deg);
+            }
         }
 
         /* Time & Filter Row */
@@ -419,13 +512,26 @@
             margin-bottom: 22px;
         }
         @media (max-width: 640px) {
-            .time-row { grid-template-columns: 1fr; }
-            .card { padding: 20px 14px; }
-            .main-container { margin: -25px auto 30px; padding: 0 10px; }
-            .brand-sub { display: none; }
-            .hero-title { font-size: 1.6rem; }
-            .hero-subtitle { font-size: 0.92rem; }
-            .btn-pwa, .btn-telegram { padding: 6px 10px; font-size: 0.8rem; }
+            .transport-pills {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+            .pill-btn {
+                width: 100%;
+                text-align: center;
+                padding: 10px 8px;
+                font-size: 0.84rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .time-row { grid-template-columns: 1fr; gap: 12px; }
+            .card { padding: 20px 14px; border-radius: 14px; }
+            .main-container { margin: -25px auto 30px; padding: 0 12px; }
+            .hero { padding: 28px 14px 44px; }
+            .hero-title { font-size: 1.55rem; }
+            .hero-subtitle { font-size: 0.9rem; }
         }
 
         /* Submit Button */
@@ -467,7 +573,7 @@
             border: 1px solid var(--border);
             border-left: 5px solid var(--primary);
             border-radius: var(--radius-md);
-            padding: 16px 20px;
+            padding: 16px 18px;
             margin-bottom: 12px;
             box-shadow: var(--shadow-sm);
             transition: transform 0.15s, box-shadow 0.15s;
@@ -480,7 +586,9 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 6px;
         }
         .badge-mode {
             font-size: 0.78rem;
@@ -489,41 +597,50 @@
             border-radius: 999px;
             background: var(--primary-light);
             color: var(--primary);
+            white-space: nowrap;
         }
         .badge-duration {
-            font-size: 0.85rem;
+            font-size: 0.84rem;
             color: var(--text-muted);
             font-weight: 600;
+            white-space: nowrap;
         }
         .itinerary-timeline {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 12px;
         }
         .stop-point {
             flex: 1;
+            min-width: 0;
         }
         .stop-time {
             font-size: 1.35rem;
             font-weight: 800;
             color: var(--text-main);
+            letter-spacing: -0.02em;
         }
         .stop-name {
-            font-size: 0.92rem;
+            font-size: 0.9rem;
             color: var(--text-muted);
             font-weight: 600;
+            word-break: break-word;
+            line-height: 1.3;
         }
         .timeline-arrow {
             color: #94a3b8;
-            font-size: 1.4rem;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+            padding: 0 2px;
         }
         .transfer-note {
             margin-top: 10px;
             padding-top: 8px;
             border-top: 1px dashed var(--border);
-            font-size: 0.85rem;
+            font-size: 0.84rem;
             color: #d97706;
             font-weight: 600;
+            line-height: 1.4;
         }
 
         /* AI Assistant Section */
@@ -565,7 +682,7 @@
             gap: 20px;
         }
         @media (max-width: 768px) {
-            .two-cols { grid-template-columns: 1fr; }
+            .two-cols { grid-template-columns: 1fr; gap: 16px; }
         }
 
         .doc-btn {
@@ -581,6 +698,8 @@
             font-weight: 600;
             margin-bottom: 10px;
             transition: all 0.2s;
+            gap: 10px;
+            min-width: 0;
         }
         .doc-btn:hover {
             border-color: var(--primary);
@@ -591,9 +710,20 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            min-width: 0;
+            flex: 1;
         }
-        .doc-icon { font-size: 1.4rem; }
-        .doc-tag { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; }
+        .doc-meta > div {
+            min-width: 0;
+        }
+        .doc-icon { font-size: 1.4rem; flex-shrink: 0; }
+        .doc-tag {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            display: block;
+            word-break: break-word;
+        }
 
         .news-item {
             padding: 12px 0;
@@ -607,6 +737,7 @@
             text-decoration: none;
             display: block;
             margin-bottom: 3px;
+            word-break: break-word;
         }
         .news-title:hover { text-decoration: underline; }
         .news-date {
@@ -618,22 +749,60 @@
         footer {
             border-top: 1px solid var(--border);
             background: #ffffff;
-            padding: 24px 20px;
+            padding: 24px 16px;
             text-align: center;
-            font-size: 0.88rem;
+            font-size: 0.86rem;
             color: var(--text-muted);
         }
         .footer-links {
-            margin-top: 8px;
+            margin-top: 10px;
             display: flex;
             justify-content: center;
-            gap: 16px;
+            gap: 8px 16px;
+            flex-wrap: wrap;
         }
         .footer-links a {
             color: var(--text-muted);
             text-decoration: none;
+            font-size: 0.82rem;
+            padding: 2px 4px;
         }
         .footer-links a:hover { color: var(--primary); }
+
+        /* Mobile specific enhancements */
+        @media (max-width: 480px) {
+            .itinerary-card {
+                padding: 13px 12px;
+                border-radius: 12px;
+            }
+            .stop-time {
+                font-size: 1.16rem;
+            }
+            .stop-name {
+                font-size: 0.82rem;
+            }
+            .timeline-arrow {
+                font-size: 1.05rem;
+            }
+            .badge-duration {
+                font-size: 0.78rem;
+            }
+            .doc-btn {
+                padding: 12px 12px;
+                font-size: 0.88rem;
+            }
+        }
+        @media (max-width: 360px) {
+            .itinerary-timeline {
+                gap: 6px;
+            }
+            .stop-time {
+                font-size: 1.08rem;
+            }
+            .stop-name {
+                font-size: 0.78rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -642,18 +811,21 @@
     <nav class="navbar">
         <div class="nav-container">
             <a href="/" class="brand">
-                <img src="/static/icons/icon.svg" class="brand-logo" alt="FCE Orari Logo" width="38" height="38">
-                <div>
-                    Circumetnea Mobilità
+                <img src="/static/icons/icon.svg" class="brand-logo" alt="FCE Orari Logo" width="36" height="36">
+                <div class="brand-text-container">
+                    <span class="brand-title">Circumetnea Mobilità</span>
                     <span class="brand-sub">Ferrovia e Metro di Catania</span>
                 </div>
             </a>
             <div class="nav-actions">
                 <button type="button" class="btn-pwa pwa-install-trigger" onclick="promptPWAInstall()" title="Scarica l'app sul tuo telefono o PC">
-                    📲 Scarica App
+                    <span class="btn-text-full">📲 Scarica App</span>
+                    <span class="btn-text-short">📲 App</span>
                 </button>
-                <a href="https://t.me/fce_app_bot" target="_blank" class="btn-telegram">
-                    📱 Bot Telegram (@fce_app_bot)
+                <a href="https://t.me/fce_app_bot" target="_blank" class="btn-telegram" title="Apri il Bot Telegram ufficiale">
+                    <span class="btn-text-full">📱 Bot Telegram (@fce_app_bot)</span>
+                    <span class="btn-text-med">📱 Telegram</span>
+                    <span class="btn-text-short">📱 Bot</span>
                 </a>
             </div>
         </div>
