@@ -26,6 +26,23 @@ REGOLE FONDAMENTALI DI RISPOSTA:
 """
 
 
+class ExtractedEntities(tuple):
+    """Backwards-compatible tuple representing extracted query components.
+    
+    Can be unpacked as 4 items: (origin, destination, time, transport_type)
+    or accessed with properties .origin, .destination, .time, .transport_type, .filter_type.
+    """
+    def __new__(cls, origin, destination, time_val, ttype, ftype=FilterType.DEPARTURE_AFTER):
+        return super().__new__(cls, (origin, destination, time_val, ttype))
+
+    def __init__(self, origin, destination, time_val, ttype, ftype=FilterType.DEPARTURE_AFTER):
+        self.origin = origin
+        self.destination = destination
+        self.time = time_val
+        self.transport_type = ttype
+        self.filter_type = ftype
+
+
 class AIService:
     """Natural Language processing and LLM-assisted trip advisor."""
 
@@ -43,57 +60,153 @@ class AIService:
                 self._all_stop_names_cache = []
         return self._all_stop_names_cache
 
-    def extract_entities(self, text: str) -> Tuple[Optional[str], Optional[str], Optional[str], TransportType]:
-        """Extract origin, destination, time, and transport type from freeform text."""
+    def _clean_entity(self, name: Optional[str]) -> Optional[str]:
+        if not name:
+            return None
+        c = name.strip()
+        c = re.sub(r"^(?:stazione\s+di|fermata\s+di|stazione|fermata|comune\s+di|la\s+città\s+di)\s+", "", c, flags=re.I)
+        c = re.sub(r"\s+(?:per\s+le|entro\s+le|alle|verso\s+le|verso|ore|domani|oggi|dopo|prima).*$", "", c, flags=re.I)
+        c = re.sub(r"[\?\.!,;:]+$", "", c)
+        return c.strip() or None
+
+    def _extract_with_llm(self, text: str) -> dict:
+        """Call Gemini to extract origin, destination, time and intent if regex was uncertain."""
+        if not settings.GEMINI_API_KEY:
+            return {}
+        try:
+            import json
+            api_key = settings.GEMINI_API_KEY
+            model = settings.GEMINI_MODEL or "gemini-3.5-flash-lite"
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+            prompt = (
+                f"Estrai le informazioni di viaggio dalla richiesta del passeggero (rete Ferrovia Circumetnea / Metro Catania): \"{text}\"\n"
+                "Rispondi ESCLUSIVAMENTE con un JSON con questa struttura esatta:\n"
+                "{\"origin\": \"nome_stazione_partenza o null\", \"destination\": \"nome_stazione_arrivo o null\", \"time\": \"HH:MM o null\", \"is_arrival_time\": true/false, \"transport\": \"QUALSIASI\"|\"TRENO\"|\"METRO\"|\"BUS\"}"
+            )
+            payload = {
+                "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+                "generationConfig": {"temperature": 0.0, "maxOutputTokens": 200, "responseMimeType": "application/json"}
+            }
+            resp = requests.post(url, json=payload, timeout=8)
+            if resp.status_code == 200:
+                data = resp.json()
+                raw_json = data["candidates"][0]["content"]["parts"][0]["text"]
+                return json.loads(raw_json)
+        except Exception as e:
+            logger.debug("LLM extraction fallback error: %s", e)
+        return {}
+
+    def extract_entities(self, text: str) -> ExtractedEntities:
+        """Extract origin, destination, time, transport type and filter type from freeform text."""
         origin = None
         destination = None
         dep_time = None
         ttype = TransportType.QUALSIASI
 
-        # Detect transport type
+        # 1. Detect transport type
         lower_text = text.lower()
         if "metro" in lower_text or "metropolitana" in lower_text:
             ttype = TransportType.METRO
         elif "treno" in lower_text or "littorina" in lower_text or "ferrovia" in lower_text:
             ttype = TransportType.TRENO
-        elif "bus" in lower_text or "autobus" in lower_text or "pullman" in lower_text or "navetta" in lower_text:
+        elif "bus" in lower_text or "autobus" in lower_text or "pullman" in lower_text or "navetta" in lower_text or "autolinee" in lower_text:
             ttype = TransportType.BUS
 
-        # Extract time (e.g. 14:30, 8.00, alle 9, verso le 15, 17)
-        time_match = re.search(r"\b(?:alle\s+|verso\s+le\s+|ore\s+)?([0-1]?[0-9]|2[0-3])[:.]([0-5][0-9])\b", text, re.IGNORECASE)
+        # 2. Detect arrival vs departure intent (e.g. "arrivare per le 15", "arrivo entro le 10")
+        is_arrival = bool(re.search(
+            r"\b(?:arrivare|arrivo|arrivando|essere\s+(?:a|ad)|entro\s+le|per\s+le|prima\s+delle)\b",
+            text,
+            re.IGNORECASE
+        ))
+        ftype = FilterType.ARRIVAL_BEFORE if is_arrival else FilterType.DEPARTURE_AFTER
+
+        # 3. Extract time (e.g. 14:30, 8.00, alle 9, per le 15, entro le 12, verso le 8)
+        time_match = re.search(
+            r"\b(?:alle\s+|verso\s+le\s+|entro\s+le\s+|per\s+le\s+|prima\s+delle\s+|dopo\s+le\s+|intorno\s+alle\s+|ore\s+)?([0-1]?[0-9]|2[0-3])[:.]([0-5][0-9])\b",
+            text,
+            re.IGNORECASE
+        )
         if time_match:
             h, m = time_match.group(1), time_match.group(2)
             dep_time = f"{int(h):02d}:{int(m):02d}"
         else:
-            hour_match = re.search(r"\b(?:alle\s+|verso\s+le\s+|ore\s+)([0-1]?[0-9]|2[0-3])\b", text, re.IGNORECASE)
+            hour_match = re.search(
+                r"\b(?:alle\s+|verso\s+le\s+|entro\s+le\s+|per\s+le\s+|prima\s+delle\s+|dopo\s+le\s+|intorno\s+alle\s+|ore\s+)([0-1]?[0-9]|2[0-3])\b",
+                text,
+                re.IGNORECASE
+            )
             if hour_match:
                 h = hour_match.group(1)
                 dep_time = f"{int(h):02d}:00"
+            elif "mattina" in lower_text or "mattino" in lower_text:
+                dep_time = "08:00"
+            elif "pomeriggio" in lower_text:
+                dep_time = "14:00"
+            elif "sera" in lower_text:
+                dep_time = "18:00"
+            elif "mezzogiorno" in lower_text:
+                dep_time = "12:00"
 
-        # Regex patterns for Italian travel queries:
-        # e.g., "da Catania a Bronte", "per Adrano da Paternò", "Catania - Randazzo"
-        pat1 = re.search(r"\bda\s+([A-Za-z0-9'\s]+?)\s+(?:a|per)\s+([A-Za-z0-9'\s]+?)(?:\s+(?:alle|verso|ore|domani|oggi|in|con)|$)", text, re.IGNORECASE)
+        # 4. Regex patterns for Italian travel queries
+        # Pattern 1: "da <Orig> a/ad/verso/per <Dest>"
+        pat1 = re.search(
+            r"\bda\s+([\w\'\s]+?)\s+(?:a|ad|verso|per)\s+([\w\'\s]+?)(?:\s+(?:alle|verso|entro|per\s+le|prima\s+delle|dopo|ore|domani|oggi|in|con|che)|\?|\.|$)",
+            text,
+            re.IGNORECASE
+        )
         if pat1:
-            origin = pat1.group(1).strip()
-            destination = pat1.group(2).strip()
-        else:
-            pat2 = re.search(r"\bper\s+([A-Za-z0-9'\s]+?)\s+da\s+([A-Za-z0-9'\s]+?)(?:\s+(?:alle|verso|ore|domani|oggi|in|con)|$)", text, re.IGNORECASE)
-            if pat2:
-                destination = pat2.group(1).strip()
-                origin = pat2.group(2).strip()
-            else:
-                pat3 = re.search(r"([A-Za-z0-9'\s]+?)\s*[-–>]\s*([A-Za-z0-9'\s]+)", text)
-                if pat3:
-                    origin = pat3.group(1).strip()
-                    destination = pat3.group(2).strip()
+            origin = self._clean_entity(pat1.group(1))
+            destination = self._clean_entity(pat1.group(2))
 
-        # If origin/destination still not matched, scan against known stations
+        # Pattern 2: "per/ad/a/verso <Dest> da/partendo da <Orig>"
+        if not origin or not destination:
+            pat2 = re.search(
+                r"\b(?:per|ad|a|verso)\s+([\w\'\s]+?)\s+(?:da|partendo\s+da)\s+([\w\'\s]+?)(?:\s+(?:alle|verso|entro|per\s+le|prima\s+delle|dopo|ore|domani|oggi|in|con|che)|\?|\.|$)",
+                text,
+                re.IGNORECASE
+            )
+            if pat2:
+                destination = self._clean_entity(pat2.group(1))
+                origin = self._clean_entity(pat2.group(2))
+
+        # Pattern 3: "partendo da <Orig> ... per/ad/a <Dest>"
+        if not origin or not destination:
+            pat3 = re.search(
+                r"\bpartendo\s+da\s+([\w\'\s]+?)\s+(?:per|a|ad|verso|fino\s+a)\s+([\w\'\s]+?)(?:\s+(?:alle|verso|entro|per\s+le|prima\s+delle|dopo|ore|domani|oggi|in|con|che)|\?|\.|$)",
+                text,
+                re.IGNORECASE
+            )
+            if pat3:
+                origin = self._clean_entity(pat3.group(1))
+                destination = self._clean_entity(pat3.group(2))
+
+        # Pattern 4: "<Orig> - <Dest>"
+        if not origin or not destination:
+            pat4 = re.search(
+                r"([\w\'\s]+?)\s*[-–>]\s*([\w\'\s]+?)(?:\s+(?:alle|verso|entro|per\s+le|prima\s+delle|dopo|ore|domani|oggi)|\?|\.|$)",
+                text
+            )
+            if pat4:
+                origin = self._clean_entity(pat4.group(1))
+                destination = self._clean_entity(pat4.group(2))
+
+        # Pattern 5: Separated clauses (e.g. "Devo essere ad Adrano per le 15 partendo da Paternò")
+        if not origin or not destination:
+            orig_m = re.search(r"\b(?:partendo\s+da|partenza\s+da|da)\s+([\w\']+)", text, re.IGNORECASE)
+            dest_m = re.search(r"\b(?:arrivare\s+(?:a|ad)|essere\s+(?:a|ad)|fino\s+a|diretto\s+a|verso|ad|a)\s+([\w\']+)", text, re.IGNORECASE)
+            if orig_m and not origin:
+                origin = self._clean_entity(orig_m.group(1))
+            if dest_m and not destination:
+                cand = self._clean_entity(dest_m.group(1))
+                if cand and cand.lower() not in ("le", "ore", "un", "una", "il", "la"):
+                    destination = cand
+
+        # 5. Station dictionary matching fallback
         if not origin or not destination:
             found_stops = []
             norm_text = normalize_stop_name(text)
             for sname, norm_sname in self._get_known_stops():
-                # Avoid single letter / common words matches
-                if len(norm_sname) >= 4 and norm_sname in norm_text:
+                if len(norm_sname) >= 4 and f" {norm_sname} " in f" {norm_text} ":
                     if sname not in found_stops:
                         found_stops.append(sname)
             if len(found_stops) >= 2:
@@ -102,12 +215,28 @@ class AIService:
                 if not destination:
                     destination = found_stops[1]
 
-        return origin, destination, dep_time, ttype
+        # 6. LLM extraction fallback for complex phrasing
+        if (not origin or not destination) and settings.GEMINI_API_KEY:
+            llm_data = self._extract_with_llm(text)
+            if llm_data:
+                origin = origin or self._clean_entity(llm_data.get("origin"))
+                destination = destination or self._clean_entity(llm_data.get("destination"))
+                dep_time = dep_time or llm_data.get("time")
+                if llm_data.get("is_arrival_time"):
+                    ftype = FilterType.ARRIVAL_BEFORE
+                if llm_data.get("transport"):
+                    ttype = TransportType.from_str(llm_data.get("transport"))
+
+        return ExtractedEntities(origin, destination, dep_time, ttype, ftype)
 
     def answer_query(self, user_question: str) -> AIQueryResponse:
         """Process user natural language query and formulate response."""
-        origin, destination, time_str, ttype = self.extract_entities(user_question)
-        target_time = time_str or "08:00"
+        entities = self.extract_entities(user_question)
+        origin = entities.origin
+        destination = entities.destination
+        target_time = entities.time or "08:00"
+        ttype = entities.transport_type
+        ftype = entities.filter_type
 
         itineraries = []
         if origin and destination:
@@ -116,9 +245,19 @@ class AIService:
                 destination=destination,
                 target_time=target_time,
                 transport_type=ttype,
-                filter_type=FilterType.DEPARTURE_AFTER,
+                filter_type=ftype,
                 limit=5
             )
+            # If no trips found with ARRIVAL_BEFORE, attempt DEPARTURE_AFTER as fallback
+            if not itineraries and ftype == FilterType.ARRIVAL_BEFORE:
+                itineraries = transit_service.find_trips(
+                    origin=origin,
+                    destination=destination,
+                    target_time=target_time,
+                    transport_type=ttype,
+                    filter_type=FilterType.DEPARTURE_AFTER,
+                    limit=5
+                )
 
         # Build context for LLM or rule-based answering
         docs = documents_service.get_documents()
@@ -131,6 +270,7 @@ class AIService:
                     origin=origin,
                     destination=destination,
                     target_time=target_time,
+                    filter_type=ftype,
                     itineraries=itineraries,
                     docs=docs
                 )
@@ -161,6 +301,7 @@ class AIService:
             origin=origin,
             destination=destination,
             target_time=target_time,
+            filter_type=ftype,
             itineraries=itineraries,
             docs=docs
         )
@@ -189,6 +330,7 @@ class AIService:
         origin: Optional[str],
         destination: Optional[str],
         target_time: str,
+        filter_type: FilterType,
         itineraries: list,
         docs: Any
     ) -> str:
@@ -226,16 +368,18 @@ class AIService:
 
         # 4. Route not found
         if not itineraries:
+            desc = f"con arrivo entro le ore {target_time}" if filter_type == FilterType.ARRIVAL_BEFORE else f"a partire dalle ore {target_time}"
             return (
-                f"Non ho trovato corse dirette o con cambio immediato da {origin} a {destination} a partire dalle ore {target_time}.\n\n"
+                f"Non ho trovato corse dirette o con cambio immediato da {origin} a {destination} {desc}.\n\n"
                 "Suggerimenti:\n"
                 "• Prova a modificare l'orario o verifica il nome esatto della fermata.\n"
                 "• Puoi consultare e scaricare gli orari aggiornati ufficiali nella sezione dedicata in questa pagina."
             )
 
         # 5. Itineraries found
+        desc = f"con arrivo entro le ore {target_time}" if filter_type == FilterType.ARRIVAL_BEFORE else f"a partire dalle ore {target_time}"
         lines = [
-            f"Ho trovato {len(itineraries)} soluzioni da {origin} a {destination} a partire dalle ore {target_time}:\n"
+            f"Ho trovato {len(itineraries)} soluzioni da {origin} a {destination} {desc}:\n"
         ]
         for idx, it in enumerate(itineraries[:4], 1):
             lines.append(f"{idx}. {it.format_clean()}")
@@ -249,6 +393,7 @@ class AIService:
         origin: Optional[str],
         destination: Optional[str],
         target_time: str,
+        filter_type: FilterType,
         itineraries: list,
         docs: Any
     ) -> Optional[str]:
@@ -266,10 +411,12 @@ class AIService:
         else:
             schedule_ctx = "Nessuna corsa trovata dal database per i criteri specificati."
 
+        criteria_str = f"Arrivo richiesto entro le {target_time}" if filter_type == FilterType.ARRIVAL_BEFORE else f"Partenza richiesta a partire dalle ore {target_time}"
+
         prompt = f"""Domanda del passeggero: "{question}"
 Origine individuata: {origin or 'Non specificata'}
 Destinazione individuata: {destination or 'Non specificata'}
-Orario di riferimento: {target_time}
+Criterio orario: {criteria_str}
 
 {schedule_ctx}
 

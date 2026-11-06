@@ -49,3 +49,14 @@ def test_ai_documents_clean_answer():
     resp = ai_service.answer_query("Vorrei scaricare la tabella PDF degli orari")
     assert "](" not in resp.answer
     assert "orari" in resp.answer.lower()
+
+
+def test_ai_arrival_query_paterno_adrano():
+    """Verify natural language query asking to arrive by a specific time."""
+    query = "Trovami una soluzione che mi faccia arrivare da Paterno ad Adrano per le 15"
+    resp = ai_service.answer_query(query)
+    assert resp.origin is not None and "paterno" in resp.origin.lower()
+    assert resp.destination is not None and "adrano" in resp.destination.lower()
+    assert resp.time == "15:00"
+    assert resp.itineraries_count > 0
+    assert any(hour in resp.answer for hour in ["14:", "14.5", "14.1", "14.2"])
