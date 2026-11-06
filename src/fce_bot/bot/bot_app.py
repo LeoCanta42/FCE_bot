@@ -1,6 +1,7 @@
 """Telegram Application factory and handler configuration."""
 
 import logging
+from telegram import BotCommand
 from telegram.ext import (
     Application,
     ApplicationBuilder,
@@ -37,6 +38,34 @@ from fce_bot.bot.handlers.admin import stats_command, sync_gtfs_command, broadca
 
 logger = logging.getLogger(__name__)
 
+# List of public slash commands registered with Telegram for autocomplete menu
+PUBLIC_BOT_COMMANDS = [
+    BotCommand("start", "Menu principale e calcolo viaggio"),
+    BotCommand("viaggio", "Cerca corsa (es. /viaggio Catania - Bronte)"),
+    BotCommand("fermate", "Cerca stazioni e fermate FCE"),
+    BotCommand("news", "Ultime notizie e avvisi di servizio"),
+    BotCommand("iscriviti", "Ricevi notifiche su scioperi e variazioni"),
+    BotCommand("disiscriviti", "Disattiva la ricezione delle notifiche"),
+    BotCommand("documenti", "Scarica le tabelle orarie PDF ufficiali"),
+    BotCommand("help", "Guida dettagliata all'uso del bot"),
+    BotCommand("privacy", "Informativa GDPR e privacy"),
+    BotCommand("cancella", "Cancella tutti i tuoi dati dal bot"),
+    BotCommand("chat_id", "Mostra l'identificativo di questa chat"),
+]
+
+
+async def post_init(application: Application) -> None:
+    """Register public bot commands with Telegram for '/' autocomplete."""
+    token = application.bot.token
+    if not token or token.startswith("0000000000"):
+        return
+
+    try:
+        await application.bot.set_my_commands(PUBLIC_BOT_COMMANDS)
+        logger.info("Bot commands successfully registered with Telegram for autocomplete.")
+    except Exception as exc:
+        logger.warning("Could not set bot commands: %s", exc)
+
 
 def create_bot_application() -> Application:
     """Instantiate and configure the python-telegram-bot Application."""
@@ -45,7 +74,7 @@ def create_bot_application() -> Application:
         logger.warning("TELEGRAM_BOT_TOKEN is not set. Bot will run in unconfigured mode.")
         token = "0000000000:DUMMY_TOKEN_FOR_INITIALIZATION"
 
-    builder = ApplicationBuilder().token(token)
+    builder = ApplicationBuilder().token(token).post_init(post_init)
     app = builder.build()
 
     # Commands

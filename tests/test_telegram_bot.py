@@ -224,3 +224,46 @@ async def test_manual_news_subscription_flow():
 
     # Clean up
     repo.delete_user(test_cid)
+
+
+@pytest.mark.anyio
+async def test_bot_post_init_and_commands():
+    """Verify bot application factory, public commands list, and post_init registration."""
+    from fce_bot.bot.bot_app import create_bot_application, post_init, PUBLIC_BOT_COMMANDS
+
+    app = create_bot_application()
+    assert app is not None
+
+    # Check commands list
+    cmd_names = [c.command for c in PUBLIC_BOT_COMMANDS]
+    assert "start" in cmd_names
+    assert "viaggio" in cmd_names
+    assert "fermate" in cmd_names
+    assert "news" in cmd_names
+    assert "iscriviti" in cmd_names
+    assert "disiscriviti" in cmd_names
+    assert "documenti" in cmd_names
+    assert "help" in cmd_names
+    assert "privacy" in cmd_names
+    assert "cancella" in cmd_names
+    assert "chat_id" in cmd_names
+
+    # Admin commands should not be in public autocomplete
+    assert "stats" not in cmd_names
+    assert "broadcast" not in cmd_names
+
+    # Mock app for post_init with real-like token
+    mock_app = MagicMock()
+    mock_app.bot.token = "123456789:ABCdefGHIjklMNOpqrSTUvwxYZ"
+    mock_app.bot.set_my_commands = AsyncMock()
+
+    await post_init(mock_app)
+    mock_app.bot.set_my_commands.assert_awaited_once_with(PUBLIC_BOT_COMMANDS)
+
+    # Post init with dummy token should safely return without network call
+    mock_dummy_app = MagicMock()
+    mock_dummy_app.bot.token = "0000000000:DUMMY"
+    mock_dummy_app.bot.set_my_commands = AsyncMock()
+    await post_init(mock_dummy_app)
+    mock_dummy_app.bot.set_my_commands.assert_not_called()
+
