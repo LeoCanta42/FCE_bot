@@ -13,9 +13,12 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="FCE Orari">
     <meta name="application-name" content="FCE Orari">
-    <link rel="apple-touch-icon" sizes="192x192" href="/static/icons/icon-192.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="/static/icons/icon-192.png">
+    
+    <!-- Vector SVG Icon is preferred for sharp graphics on any device & resolution -->
     <link rel="icon" type="image/svg+xml" href="/static/icons/icon.svg">
+    <link rel="alternate icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" href="/static/icons/icon.svg">
+    <link rel="apple-touch-icon" sizes="192x192" href="/static/icons/icon-192.png">
 
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -65,15 +68,27 @@
         .brand {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
             text-decoration: none;
             color: var(--text-main);
             font-weight: 700;
             font-size: 1.15rem;
         }
-        .brand-icon {
-            font-size: 1.6rem;
-            line-height: 1;
+        .brand-logo {
+            width: 38px;
+            height: 38px;
+            border-radius: 9px;
+            display: block;
+            flex-shrink: 0;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+        }
+        .pwa-banner-logo {
+            width: 46px;
+            height: 46px;
+            border-radius: 11px;
+            display: block;
+            flex-shrink: 0;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
         }
         .brand-sub {
             font-size: 0.78rem;
@@ -627,7 +642,7 @@
     <nav class="navbar">
         <div class="nav-container">
             <a href="/" class="brand">
-                <span class="brand-icon">🌋</span>
+                <img src="/static/icons/icon.svg" class="brand-logo" alt="FCE Orari Logo" width="38" height="38">
                 <div>
                     Circumetnea Mobilità
                     <span class="brand-sub">Ferrovia e Metro di Catania</span>
@@ -647,7 +662,7 @@
     <!-- PWA Install Banner -->
     <div id="pwaBanner" class="pwa-banner" style="display:none;">
         <div class="pwa-banner-left">
-            <span class="pwa-banner-icon">📲</span>
+            <img src="/static/icons/icon.svg" class="pwa-banner-logo" alt="FCE App Icon" width="46" height="46">
             <div class="pwa-banner-text">
                 <div class="pwa-banner-title">Scarica l'App FCE Orari</div>
                 <div class="pwa-banner-desc">Installala sullo schermo per consultare gli orari all'istante anche offline!</div>
@@ -663,7 +678,10 @@
     <div id="pwaModal" class="modal-backdrop" onclick="closePwaModal(event)" style="display:none;">
         <div class="modal-card" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3 class="modal-title">📲 Installa l'App FCE Orari</h3>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <img src="/static/icons/icon.svg" width="32" height="32" class="brand-logo" alt="FCE Logo">
+                    <h3 class="modal-title">Installa l'App FCE Orari</h3>
+                </div>
                 <button type="button" class="modal-close" onclick="closePwaModal()">&times;</button>
             </div>
             <div class="modal-body" id="modalInstructions">

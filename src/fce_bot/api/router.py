@@ -206,7 +206,7 @@ SW_PATH = STATIC_DIR / "sw.js"
 @router.get("/manifest.webmanifest", include_in_schema=False)
 @router.get("/manifest.json", include_in_schema=False)
 async def web_manifest():
-    """Serve PWA Web App Manifest."""
+    """Serve PWA Web App Manifest prioritizing crisp vector SVG graphics."""
     manifest_data = {
         "name": "Ferrovia Circumetnea & Metro",
         "short_name": "FCE Orari",
@@ -219,27 +219,21 @@ async def web_manifest():
         "orientation": "portrait-primary",
         "icons": [
             {
-                "src": "/static/icons/icon-192.png",
-                "sizes": "192x192",
-                "type": "image/png",
-                "purpose": "any"
+                "src": "/static/icons/icon.svg",
+                "sizes": "any",
+                "type": "image/svg+xml",
+                "purpose": "any maskable"
             },
             {
                 "src": "/static/icons/icon-512.png",
                 "sizes": "512x512",
                 "type": "image/png",
-                "purpose": "any"
+                "purpose": "any maskable"
             },
             {
-                "src": "/static/icons/maskable-512.png",
-                "sizes": "512x512",
+                "src": "/static/icons/icon-192.png",
+                "sizes": "192x192",
                 "type": "image/png",
-                "purpose": "maskable"
-            },
-            {
-                "src": "/static/icons/icon.svg",
-                "sizes": "any",
-                "type": "image/svg+xml",
                 "purpose": "any"
             }
         ]
@@ -268,11 +262,16 @@ async def service_worker():
 
 @router.get("/static/icons/{filename}", include_in_schema=False)
 async def serve_icon(filename: str):
-    """Serve PWA application icons."""
+    """Serve PWA application vector and raster icons."""
     file_path = ICONS_DIR / filename
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="Icon not found")
-    media_type = "image/svg+xml" if filename.endswith(".svg") else "image/png"
+    if filename.endswith(".svg"):
+        media_type = "image/svg+xml"
+    elif filename.endswith(".ico"):
+        media_type = "image/x-icon"
+    else:
+        media_type = "image/png"
     return Response(
         content=file_path.read_bytes(),
         media_type=media_type,
@@ -282,12 +281,19 @@ async def serve_icon(filename: str):
 
 @router.get("/favicon.ico", include_in_schema=False)
 async def favicon():
-    """Serve crisp favicon for browsers and bookmarks."""
-    icon_path = ICONS_DIR / "icon-192.png"
-    if icon_path.exists():
+    """Serve crisp favicon matching icon.svg graphics."""
+    ico_path = ICONS_DIR / "favicon.ico"
+    if ico_path.exists():
         return Response(
-            content=icon_path.read_bytes(),
-            media_type="image/png",
+            content=ico_path.read_bytes(),
+            media_type="image/x-icon",
+            headers={"Cache-Control": "public, max-age=604800"}
+        )
+    svg_path = ICONS_DIR / "icon.svg"
+    if svg_path.exists():
+        return Response(
+            content=svg_path.read_bytes(),
+            media_type="image/svg+xml",
             headers={"Cache-Control": "public, max-age=604800"}
         )
     return Response(status_code=204)

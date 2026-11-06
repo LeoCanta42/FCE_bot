@@ -33,17 +33,19 @@ def test_favicon():
     """Verify favicon route returns valid icon."""
     resp = client.get("/favicon.ico")
     assert resp.status_code == 200
-    assert "image/png" in resp.headers["content-type"]
+    assert any(t in resp.headers["content-type"] for t in ("image/x-icon", "image/png", "image/svg+xml"))
 
 
 def test_pwa_manifest_and_sw():
     """Verify PWA manifest and service worker routes."""
-    # Manifest
+    # Manifest prioritizing SVG vector icon
     resp_m = client.get("/manifest.webmanifest")
     assert resp_m.status_code == 200
     m_data = resp_m.json()
     assert m_data["name"] == "Ferrovia Circumetnea & Metro"
     assert m_data["display"] == "standalone"
+    assert m_data["icons"][0]["src"] == "/static/icons/icon.svg"
+    assert "svg" in m_data["icons"][0]["type"]
     assert len(m_data["icons"]) >= 3
 
     # Service Worker
