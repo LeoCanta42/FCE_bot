@@ -1,5 +1,6 @@
 """Domain models and data schemas for FCE Bot."""
 
+import re
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import List, Optional
@@ -213,15 +214,44 @@ class NewsItem(BaseModel):
     summary: Optional[str] = None
     guid: Optional[str] = None
 
+    def format_date_italian(self) -> str:
+        """Format RFC-822 or ISO date string into Italian human-readable format."""
+        if not self.published_date:
+            return ""
+        try:
+            from email.utils import parsedate_to_datetime
+            dt = parsedate_to_datetime(self.published_date)
+            months = [
+                "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
+                "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"
+            ]
+            return f"{dt.day:02d} {months[dt.month - 1]} {dt.year}"
+        except Exception:
+            return self.published_date
+
+    def get_clean_summary(self, max_length: int = 240) -> str:
+        """Strip WordPress boilerplate and truncate cleanly."""
+        if not self.summary:
+            return ""
+        # Remove repetitive WordPress footer: "L'articolo ... proviene da Ferrovia Circumetnea"
+        cleaned = re.sub(
+            r"L[\'’`\u2019]articolo.*?proviene da Ferrovia Circumetnea\s*\.?",
+            "",
+            self.summary,
+            flags=re.I
+        ).strip()
+        if len(cleaned) > max_length:
+            cleaned = cleaned[: max_length - 3].rstrip() + "..."
+        return cleaned
+
     def format_telegram(self) -> str:
+        date_str = self.format_date_italian()
+        summary = self.get_clean_summary()
         text = f"📢 *{self.title.strip()}*\n"
-        if self.published_date:
-            text += f"📅 _{self.published_date}_\n"
-        if self.summary:
-            clean_summary = self.summary.strip()
-            if len(clean_summary) > 300:
-                clean_summary = clean_summary[:297] + "..."
-            text += f"\n{clean_summary}\n"
+        if date_str:
+            text += f"📅 _{date_str}_\n"
+        if summary:
+            text += f"\n{summary}\n"
         text += f"\n🔗 [Leggi sul sito FCE]({self.link})"
         return text
 

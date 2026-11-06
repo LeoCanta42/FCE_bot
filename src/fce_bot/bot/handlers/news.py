@@ -12,33 +12,51 @@ logger = logging.getLogger(__name__)
 users_repo = UsersRepository()
 
 
+def format_news_digest(articles) -> str:
+    """Format a list of news items into a single neat Telegram digest with the newest on top."""
+    if not articles:
+        return "Al momento non ci sono notizie o avvisi recenti pubblicati da Circumetnea."
+
+    number_emojis = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣"]
+    lines = ["📢 *Ultime Notizie & Avvisi Ufficiali FCE*\n"]
+
+    for idx, item in enumerate(articles):
+        num = number_emojis[idx] if idx < len(number_emojis) else f"{idx + 1}."
+        date_str = item.format_date_italian()
+        summary = item.get_clean_summary(max_length=200)
+
+        lines.append(f"{num} *{item.title.strip()}*")
+        if date_str:
+            lines.append(f"📅 _{date_str}_")
+        if summary:
+            lines.append(f"{summary}")
+        lines.append(f"🔗 [Leggi notizia completa]({item.link})\n")
+
+    return "\n".join(lines)
+
+
 async def news_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /news command."""
-    articles = news_service.fetch_news(limit=3)
+    articles = news_service.fetch_news(limit=4)
     chat_id = update.effective_chat.id if update.effective_chat else None
     is_sub = users_repo.is_user_subscribed(chat_id) if chat_id else False
 
-    if not articles:
+    digest = format_news_digest(articles)
+    try:
         await update.effective_message.reply_text(
-            "Al momento non ci sono notizie o avvisi recenti.",
-            reply_markup=subscription_manage_keyboard(is_sub)
-        )
-        return
-
-    for item in articles[:-1]:
-        await update.effective_message.reply_text(
-            item.format_telegram(),
+            digest,
             parse_mode="Markdown",
-            disable_web_page_preview=False
+            reply_markup=subscription_manage_keyboard(is_sub),
+            disable_web_page_preview=True
         )
-    # Attach subscription keyboard to last item
-    last = articles[-1]
-    await update.effective_message.reply_text(
-        last.format_telegram(),
-        parse_mode="Markdown",
-        reply_markup=subscription_manage_keyboard(is_sub),
-        disable_web_page_preview=False
-    )
+    except Exception as e:
+        logger.warning("Markdown parse error on news digest: %s. Sending plain fallback.", e)
+        plain = digest.replace("*", "").replace("_", "")
+        await update.effective_message.reply_text(
+            plain,
+            reply_markup=subscription_manage_keyboard(is_sub),
+            disable_web_page_preview=True
+        )
 
 
 async def news_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -49,56 +67,26 @@ async def news_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     chat_id = update.effective_chat.id if update.effective_chat else None
     is_sub = users_repo.is_user_subscribed(chat_id) if chat_id else False
 
-    articles = news_service.fetch_news(limit=3)
-    if not articles:
-        await query.edit_message_text(
-            "Al momento non ci sono notizie o avvisi recenti.",
-            reply_markup=subscription_manage_keyboard(is_sub)
-        )
-        return
+    articles = news_service.fetch_news(limit=4)
+    digest = format_news_digest(articles)
 
-    # Send first article by editing the message, subsequent ones as new messages
-    first = articles[0]
-    markup = subscription_manage_keyboard(is_sub) if len(articles) == 1 else main_menu_keyboard()
     try:
         await query.edit_message_text(
-            first.format_telegram(),
+            digest,
             parse_mode="Markdown",
-            reply_markup=markup,
+            reply_markup=subscription_manage_keyboard(is_sub),
             disable_web_page_preview=True
         )
     except Exception as e:
-        logger.warning("Markdown error rendering news: %s. Falling back to plain text.", e)
-        plain = f"📢 {first.title.strip()}\n"
-        if first.published_date:
-            plain += f"📅 {first.published_date}\n"
-        if first.summary:
-            plain += f"\n{first.summary.strip()[:297]}\n"
-        plain += f"\n🔗 {first.link}"
+        if "Message is not modified" in str(e):
+            return
+        logger.warning("Markdown error rendering news digest: %s. Falling back to plain text.", e)
+        plain = digest.replace("*", "").replace("_", "")
         await query.edit_message_text(
             plain,
-            reply_markup=markup,
+            reply_markup=subscription_manage_keyboard(is_sub),
             disable_web_page_preview=True
         )
-
-    for idx, item in enumerate(articles[1:], start=1):
-        item_markup = subscription_manage_keyboard(is_sub) if idx == len(articles) - 1 else None
-        try:
-            await context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text=item.format_telegram(),
-                parse_mode="Markdown",
-                reply_markup=item_markup,
-                disable_web_page_preview=True
-            )
-        except Exception:
-            plain = f"📢 {item.title.strip()}\n{item.summary or ''}\n{item.link}"
-            await context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text=plain,
-                reply_markup=item_markup,
-                disable_web_page_preview=True
-            )
 
 
 # ==========================================
