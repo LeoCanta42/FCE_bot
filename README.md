@@ -148,7 +148,7 @@ Il progetto è nativamente predisposto per essere distribuito su **Vercel**.
 
 ### Come funziona su Vercel:
 1. **Webhook Telegram:** Invece del continuous polling (incompatibile con il serverless), Telegram invia ogni evento via HTTP POST a `/api/webhook`.
-2. **Vercel Cron:** La verifica delle notizie viene eseguita periodicamente (es. ogni ora) invocando l'endpoint `/api/cron/news`.
+2. **Vercel Cron:** La verifica delle notizie viene eseguita una volta al giorno (schedule `0 6 * * *`, conforme ai limiti degli account Vercel Hobby) invocando l'endpoint `/api/cron/news`.
 3. **Database SQLite GTFS:** Il file `fce_lines.db` viene impacchettato direttamente nel bundle serverless e letto a velocità nativa (<1ms).
 
 ### Passaggi per il Deploy:
