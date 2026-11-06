@@ -30,9 +30,33 @@ def test_home_page():
 
 
 def test_favicon():
-    """Verify favicon route returns 204."""
+    """Verify favicon route returns valid icon."""
     resp = client.get("/favicon.ico")
-    assert resp.status_code == 204
+    assert resp.status_code == 200
+    assert "image/png" in resp.headers["content-type"]
+
+
+def test_pwa_manifest_and_sw():
+    """Verify PWA manifest and service worker routes."""
+    # Manifest
+    resp_m = client.get("/manifest.webmanifest")
+    assert resp_m.status_code == 200
+    m_data = resp_m.json()
+    assert m_data["name"] == "Ferrovia Circumetnea & Metro"
+    assert m_data["display"] == "standalone"
+    assert len(m_data["icons"]) >= 3
+
+    # Service Worker
+    resp_sw = client.get("/sw.js")
+    assert resp_sw.status_code == 200
+    assert "javascript" in resp_sw.headers["content-type"]
+    assert "CACHE_NAME" in resp_sw.text
+    assert resp_sw.headers.get("service-worker-allowed") == "/"
+
+    # Static Icon
+    resp_icon = client.get("/static/icons/icon.svg")
+    assert resp_icon.status_code == 200
+    assert "svg" in resp_icon.headers["content-type"]
 
 
 def test_api_stops():
@@ -107,24 +131,31 @@ def test_api_ai_ask():
     assert data["itineraries_count"] > 0
 
 
-def test_gdpr_user_erasure():
-    """Verify GDPR right to erasure (Art. 17) in UsersRepository."""
+def test_gdpr_user_erasure_and_manual_opt_in():
+    """Verify GDPR right to erasure (Art. 17) and explicit news opt-in in UsersRepository."""
     from fce_bot.data.users_repo import UsersRepository
     repo = UsersRepository()
     test_chat_id = 999888777
 
-    # Register user
+    # 1. Normal interaction: user must NOT be automatically subscribed to news broadcasts
     repo.register_or_update(chat_id=test_chat_id)
+    assert repo.is_user_subscribed(test_chat_id) is False
     subscribed = repo.get_subscribed_chat_ids()
-    assert str(test_chat_id) in subscribed
+    assert str(test_chat_id) not in subscribed
 
-    # Erase user
+    # 2. Explicit manual opt-in via button: user is subscribed
+    repo.subscribe_user(chat_id=test_chat_id, username="tester")
+    assert repo.is_user_subscribed(test_chat_id) is True
+    assert str(test_chat_id) in repo.get_subscribed_chat_ids()
+
+    # 3. Explicit manual opt-out via button
+    repo.unsubscribe_user(chat_id=test_chat_id)
+    assert repo.is_user_subscribed(test_chat_id) is False
+    assert str(test_chat_id) not in repo.get_subscribed_chat_ids()
+
+    # 4. Erase user (Right to Erasure)
     deleted = repo.delete_user(test_chat_id)
     assert deleted is True
-
-    # Ensure user is completely gone
-    subscribed_after = repo.get_subscribed_chat_ids()
-    assert str(test_chat_id) not in subscribed_after
 
 
 def test_admin_security_by_default():

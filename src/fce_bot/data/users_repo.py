@@ -18,25 +18,81 @@ class UsersRepository:
         self,
         chat_id: int | str,
         username: Optional[str] = None,
-        first_name: Optional[str] = None
+        first_name: Optional[str] = None,
+        is_subscribed: bool = False
     ) -> None:
         """Register a technical user chat interaction or update activity timestamp.
         
-        In accordance with GDPR data minimization (Art. 5(1)(c)), only the technical
-        chat ID is strictly required for delivering service announcements.
+        GDPR & Privacy Compliant: Users are NOT automatically subscribed to news broadcasts.
+        Subscription to news and announcements requires explicit manual user consent.
         """
+        clean_user = str(username) if isinstance(username, str) else None
+        clean_first = str(first_name) if isinstance(first_name, str) else None
+        try:
+            with get_db(self.db_path) as conn:
+                conn.execute("""
+                    INSERT INTO users (chat_id, username, first_name, last_active, is_subscribed)
+                    VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?)
+                    ON CONFLICT(chat_id) DO UPDATE SET
+                        username = coalesce(excluded.username, users.username),
+                        first_name = coalesce(excluded.first_name, users.first_name),
+                        last_active = CURRENT_TIMESTAMP
+                """, (str(chat_id), clean_user, clean_first, 1 if is_subscribed else 0))
+        except Exception as e:
+            logger.warning("Could not persist user %s: %s", chat_id, e)
+
+    def is_user_subscribed(self, chat_id: int | str) -> bool:
+        """Check if user has explicitly subscribed to service announcements."""
+        try:
+            with get_db(self.db_path) as conn:
+                cur = conn.cursor()
+                row = cur.execute(
+                    "SELECT is_subscribed FROM users WHERE chat_id = ?",
+                    (str(chat_id),)
+                ).fetchone()
+                return bool(row and row["is_subscribed"] == 1)
+        except Exception as e:
+            logger.warning("Error checking subscription for %s: %s", chat_id, e)
+            return False
+
+    def subscribe_user(
+        self,
+        chat_id: int | str,
+        username: Optional[str] = None,
+        first_name: Optional[str] = None
+    ) -> bool:
+        """Explicit opt-in: register user for news and service broadcasts."""
+        clean_user = str(username) if isinstance(username, str) else None
+        clean_first = str(first_name) if isinstance(first_name, str) else None
         try:
             with get_db(self.db_path) as conn:
                 conn.execute("""
                     INSERT INTO users (chat_id, username, first_name, last_active, is_subscribed)
                     VALUES (?, ?, ?, CURRENT_TIMESTAMP, 1)
                     ON CONFLICT(chat_id) DO UPDATE SET
+                        is_subscribed = 1,
                         username = coalesce(excluded.username, users.username),
                         first_name = coalesce(excluded.first_name, users.first_name),
                         last_active = CURRENT_TIMESTAMP
-                """, (str(chat_id), username, first_name))
+                """, (str(chat_id), clean_user, clean_first))
+                return True
         except Exception as e:
-            logger.warning("Could not persist user %s: %s", chat_id, e)
+            logger.error("Error subscribing user %s: %s", chat_id, e)
+            return False
+
+    def unsubscribe_user(self, chat_id: int | str) -> bool:
+        """Explicit opt-out: stop receiving news and service broadcasts."""
+        try:
+            with get_db(self.db_path) as conn:
+                cur = conn.cursor()
+                cur.execute(
+                    "UPDATE users SET is_subscribed = 0 WHERE chat_id = ?",
+                    (str(chat_id),)
+                )
+                return True
+        except Exception as e:
+            logger.error("Error unsubscribing user %s: %s", chat_id, e)
+            return False
 
     def delete_user(self, chat_id: int | str) -> bool:
         """Permanently delete user data (GDPR Art. 17 - Right to Erasure)."""

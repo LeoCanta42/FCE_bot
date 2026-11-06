@@ -2,10 +2,22 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
     <title>Ferrovia Circumetnea & Metropolitana di Catania | Orari e Linee</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌋</text></svg>">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- PWA & Mobile Web App Meta Tags -->
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#991b1b">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="FCE Orari">
+    <meta name="application-name" content="FCE Orari">
+    <link rel="apple-touch-icon" sizes="192x192" href="/static/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/icons/icon-192.png">
+    <link rel="icon" type="image/svg+xml" href="/static/icons/icon.svg">
+
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary: #9e1b1b;
@@ -37,7 +49,7 @@
         .navbar {
             background: #ffffff;
             border-bottom: 1px solid var(--border);
-            padding: 14px 20px;
+            padding: 12px 16px;
             position: sticky;
             top: 0;
             z-index: 50;
@@ -48,6 +60,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            gap: 12px;
         }
         .brand {
             display: flex;
@@ -60,43 +73,185 @@
         }
         .brand-icon {
             font-size: 1.6rem;
+            line-height: 1;
         }
         .brand-sub {
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             color: var(--text-muted);
             font-weight: 500;
             display: block;
+        }
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-pwa {
+            background: #dc2626;
+            color: #ffffff;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 999px;
+            font-size: 0.86rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+            box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25);
+            white-space: nowrap;
+        }
+        .btn-pwa:hover {
+            background: #b91c1c;
+            transform: translateY(-1px);
         }
         .btn-telegram {
             background-color: #229ED9;
             color: white;
             text-decoration: none;
-            padding: 8px 16px;
+            padding: 8px 14px;
             border-radius: 999px;
-            font-size: 0.88rem;
+            font-size: 0.86rem;
             font-weight: 600;
             display: inline-flex;
             align-items: center;
             gap: 6px;
             transition: opacity 0.2s;
+            white-space: nowrap;
         }
         .btn-telegram:hover { opacity: 0.9; }
+
+        /* PWA Install Banner */
+        .pwa-banner {
+            background: #fff5f5;
+            border-bottom: 2px solid #dc2626;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            box-shadow: var(--shadow-sm);
+        }
+        .pwa-banner-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .pwa-banner-icon { font-size: 1.6rem; }
+        .pwa-banner-title { font-weight: 700; font-size: 0.92rem; color: #7f1d1d; }
+        .pwa-banner-desc { font-size: 0.8rem; color: #991b1b; }
+        .pwa-banner-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-pwa-install {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 7px 16px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.2s;
+        }
+        .btn-pwa-install:hover { background: #b91c1c; }
+        .btn-pwa-close {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            color: #991b1b;
+            cursor: pointer;
+            padding: 4px;
+        }
+        @media (max-width: 640px) {
+            .pwa-banner {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            .pwa-banner-right {
+                width: 100%;
+                justify-content: space-between;
+            }
+            .btn-pwa-install { flex: 1; }
+        }
+
+        /* Modal Backdrop & Card */
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(4px);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .modal-card {
+            background: #ffffff;
+            border-radius: 18px;
+            max-width: 460px;
+            width: 100%;
+            padding: 24px;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.25);
+            animation: modalFadeIn 0.2s ease-out;
+        }
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        .modal-title { font-size: 1.2rem; font-weight: 800; color: var(--secondary); }
+        .modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); line-height: 1; }
+        .modal-body { font-size: 0.92rem; line-height: 1.55; color: var(--text-main); margin-bottom: 20px; }
+        .modal-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .step-num {
+            background: var(--primary-light);
+            color: var(--primary);
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.82rem;
+            flex-shrink: 0;
+        }
 
         /* Hero Banner */
         .hero {
             background: linear-gradient(135deg, #881337 0%, #991b1b 50%, #b91c1c 100%);
             color: white;
-            padding: 40px 20px 60px;
+            padding: 36px 16px 54px;
             text-align: center;
         }
         .hero-title {
-            font-size: 2.1rem;
+            font-size: 1.95rem;
             font-weight: 800;
             margin-bottom: 8px;
             letter-spacing: -0.02em;
         }
         .hero-subtitle {
-            font-size: 1.05rem;
+            font-size: 1rem;
             opacity: 0.9;
             max-width: 600px;
             margin: 0 auto;
@@ -207,12 +362,14 @@
             padding: 12px 14px;
             border: 1px solid var(--border);
             border-radius: var(--radius-md);
-            font-size: 0.98rem;
+            font-size: 16px;
+            min-height: 48px;
             font-family: inherit;
             color: var(--text-main);
             background: #ffffff;
             transition: border-color 0.2s, box-shadow 0.2s;
             outline: none;
+            -webkit-appearance: none;
         }
         .text-input:focus, .select-input:focus {
             border-color: var(--primary);
@@ -224,14 +381,15 @@
             border: 1px solid var(--border);
             color: var(--text-main);
             border-radius: 50%;
-            width: 44px;
-            height: 44px;
+            width: 48px;
+            height: 48px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            font-size: 1.2rem;
+            font-size: 1.25rem;
             transition: all 0.2s;
+            margin: 0 auto;
         }
         .btn-swap:hover {
             background: #e2e8f0;
@@ -245,8 +403,14 @@
             gap: 12px;
             margin-bottom: 22px;
         }
-        @media (max-width: 600px) {
+        @media (max-width: 640px) {
             .time-row { grid-template-columns: 1fr; }
+            .card { padding: 20px 14px; }
+            .main-container { margin: -25px auto 30px; padding: 0 10px; }
+            .brand-sub { display: none; }
+            .hero-title { font-size: 1.6rem; }
+            .hero-subtitle { font-size: 0.92rem; }
+            .btn-pwa, .btn-telegram { padding: 6px 10px; font-size: 0.8rem; }
         }
 
         /* Submit Button */
@@ -469,11 +633,47 @@
                     <span class="brand-sub">Ferrovia e Metro di Catania</span>
                 </div>
             </a>
-            <a href="https://t.me" target="_blank" class="btn-telegram">
-                📱 Apri Bot Telegram
-            </a>
+            <div class="nav-actions">
+                <button type="button" class="btn-pwa pwa-install-trigger" onclick="promptPWAInstall()" title="Scarica l'app sul tuo telefono o PC">
+                    📲 Scarica App
+                </button>
+                <a href="https://t.me" target="_blank" class="btn-telegram">
+                    📱 Bot Telegram
+                </a>
+            </div>
         </div>
     </nav>
+
+    <!-- PWA Install Banner -->
+    <div id="pwaBanner" class="pwa-banner" style="display:none;">
+        <div class="pwa-banner-left">
+            <span class="pwa-banner-icon">📲</span>
+            <div class="pwa-banner-text">
+                <div class="pwa-banner-title">Scarica l'App FCE Orari</div>
+                <div class="pwa-banner-desc">Installala sullo schermo per consultare gli orari all'istante anche offline!</div>
+            </div>
+        </div>
+        <div class="pwa-banner-right">
+            <button type="button" class="btn-pwa-install" onclick="promptPWAInstall()">Scarica Ora</button>
+            <button type="button" class="btn-pwa-close" onclick="dismissPwaBanner()" title="Chiudi">✕</button>
+        </div>
+    </div>
+
+    <!-- PWA Installation Modal (iOS / Manual guide) -->
+    <div id="pwaModal" class="modal-backdrop" onclick="closePwaModal(event)" style="display:none;">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title">📲 Installa l'App FCE Orari</h3>
+                <button type="button" class="modal-close" onclick="closePwaModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalInstructions">
+                <!-- Injected via JS based on user device -->
+            </div>
+            <div style="text-align:right;">
+                <button type="button" class="btn-submit" style="padding:10px 22px; font-size:0.95rem; width:auto; display:inline-block;" onclick="closePwaModal()">Ho Capito</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Hero Header -->
     <header class="hero">
@@ -934,10 +1134,129 @@
             }
         }
 
+        // PWA Installation Handling
+        let deferredPrompt = null;
+
+        // Listen for browser install prompt trigger
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+
+            // Make download triggers visible
+            document.querySelectorAll('.pwa-install-trigger').forEach(el => el.style.display = 'inline-flex');
+            const banner = document.getElementById('pwaBanner');
+            if (banner && !sessionStorage.getItem('pwa_banner_dismissed')) {
+                banner.style.display = 'flex';
+            }
+
+            // Automatically open download dialog on first visit as requested!
+            if (!sessionStorage.getItem('pwa_auto_prompted')) {
+                sessionStorage.setItem('pwa_auto_prompted', 'true');
+                setTimeout(() => {
+                    if (deferredPrompt) {
+                        deferredPrompt.prompt();
+                    }
+                }, 900);
+            }
+        });
+
+        // App successfully installed
+        window.addEventListener('appinstalled', () => {
+            deferredPrompt = null;
+            document.querySelectorAll('.pwa-install-trigger').forEach(el => el.style.display = 'none');
+            const banner = document.getElementById('pwaBanner');
+            if (banner) banner.style.display = 'none';
+            console.log('FCE PWA successfully installed on device');
+        });
+
+        function dismissPwaBanner() {
+            sessionStorage.setItem('pwa_banner_dismissed', 'true');
+            const banner = document.getElementById('pwaBanner');
+            if (banner) banner.style.display = 'none';
+        }
+
+        async function promptPWAInstall() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const choice = await deferredPrompt.userChoice;
+                if (choice && choice.outcome === 'accepted') {
+                    const banner = document.getElementById('pwaBanner');
+                    if (banner) banner.style.display = 'none';
+                    document.querySelectorAll('.pwa-install-trigger').forEach(el => el.style.display = 'none');
+                }
+                deferredPrompt = null;
+            } else {
+                openInstallModal();
+            }
+        }
+
+        function openInstallModal() {
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || ('standalone' in navigator && navigator.standalone);
+
+            const modal = document.getElementById('pwaModal');
+            const body = document.getElementById('modalInstructions');
+
+            if (isStandalone) {
+                body.innerHTML = '<p>🎉 L\'applicazione <strong>FCE Orari</strong> è già installata sul tuo dispositivo ed è attiva in modalità autonoma!</p>';
+            } else if (isIOS) {
+                body.innerHTML = `
+                    <div class="modal-step">
+                        <span class="step-num">1</span>
+                        <div>Tocca il tasto <strong>Condividi</strong> (icona <strong>⎋</strong> con quadrato e freccia in su) nella barra inferiore di Safari.</div>
+                    </div>
+                    <div class="modal-step">
+                        <span class="step-num">2</span>
+                        <div>Scorri l'elenco e tocca <strong>Aggiungi alla schermata Home ➕</strong>.</div>
+                    </div>
+                    <div class="modal-step">
+                        <span class="step-num">3</span>
+                        <div>Tocca <strong>Aggiungi</strong> in alto a destra: troverai l'icona FCE tra le tue app, pronta all'uso!</div>
+                    </div>
+                `;
+            } else {
+                body.innerHTML = `
+                    <div class="modal-step">
+                        <span class="step-num">1</span>
+                        <div>Tocca il menu del browser (i <strong>tre puntini ⋮</strong> in alto a destra su Chrome, Edge o Samsung Internet).</div>
+                    </div>
+                    <div class="modal-step">
+                        <span class="step-num">2</span>
+                        <div>Seleziona <strong>Installa applicazione</strong> o <strong>Aggiungi a schermata Home</strong>.</div>
+                    </div>
+                    <div class="modal-step">
+                        <span class="step-num">3</span>
+                        <div>Conferma l'installazione per avere l'app nativa con apertura istantanea anche offline!</div>
+                    </div>
+                `;
+            }
+            modal.style.display = 'flex';
+        }
+
+        function closePwaModal(e) {
+            if (e && e.target !== e.currentTarget && !e.target.classList.contains('modal-close')) return;
+            document.getElementById('pwaModal').style.display = 'none';
+        }
+
+        // Register Service Worker for offline capability
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                    .then((reg) => console.log('ServiceWorker registered:', reg.scope))
+                    .catch((err) => console.debug('ServiceWorker notice:', err));
+            });
+        }
+
         // Init on page load
         window.addEventListener('DOMContentLoaded', () => {
             loadStations();
             loadNews();
+            // Check if already in standalone mode
+            if (window.matchMedia('(display-mode: standalone)').matches || ('standalone' in navigator && navigator.standalone)) {
+                document.querySelectorAll('.pwa-install-trigger').forEach(el => el.style.display = 'none');
+                const banner = document.getElementById('pwaBanner');
+                if (banner) banner.style.display = 'none';
+            }
         });
     </script>
 </body>

@@ -23,7 +23,7 @@ Scegli un'opzione dal menu sottostante:"""
 
 HELP_TEXT = """📖 *Guida all'uso del bot:*
 
-1. *Ricerca Guidata:* premi *Cerca Linea / Orari*, seleziona il mezzo (Bus, Treno, Metro o Tutti), scegli la fermata di partenza e arrivo, ed infine l'orario.
+1. *Ricerca Guidata:* premi *Cerca Linea / Orari*, seleziona il mezzo (Bus, Treno, Metro o Tutti), scegli l'iniziale o la fermata di partenza e arrivo, ed infine l'orario.
 
 2. *Scorciatoia Comando:*
 Puoi cercare direttamente senza usare i bottoni:
@@ -38,21 +38,25 @@ _"C'è un treno da Randazzo alle 12:30?"_
 4. *Fermate:*
 `/fermate Milo` per vedere tutte le stazioni che contengono "Milo".
 
-5. *Privacy:*
-Il bot memorizza esclusivamente il chat_id e la data di ultimo accesso per permetterti di ricevere eventuali avvisi di servizio. I dati inattivi da oltre 60 giorni vengono eliminati automaticamente."""
+5. *Avvisi e Notifiche:*
+Puoi iscriverti agli avvisi in tempo reale su scioperi e ritardi premendo il pulsante *Notifiche & Avvisi* o inviando il comando /iscriviti (e disattivare con /disiscriviti).
+
+6. *Privacy:*
+Il bot memorizza esclusivamente il `chat_id` e la data di ultimo accesso per permetterti di ricevere eventuali avvisi di servizio qualora tu decida di iscriverti manualmente. Nessun messaggio broadcast viene inviato senza la tua esplicita iscrizione."""
 
 
 PRIVACY_TEXT = """🔒 *Informativa sulla Privacy & GDPR (Regolamento UE 2016/679)*
 
 • *Finalità del servizio:* Questo bot fornisce informazioni su orari, linee e avvisi di servizio della Ferrovia Circumetnea e Metropolitana di Catania.
-• *Dati trattati (Minimizzazione Art. 5):* Viene memorizzato unicamente il tuo ID tecnico di chat Telegram (`chat_id`), necessario esclusivamente per recapitare gli avvisi ufficiali di servizio (scioperi, modifiche orari, deviazioni).
+• *Consenso e Notifiche (Art. 6/7):* Nessun utente viene iscritto automaticamente agli avvisi di servizio. La ricezione delle notifiche avviene esclusivamente su richiesta manuale tramite pulsante dedicato o comando /iscriviti.
+• *Dati trattati (Minimizzazione Art. 5):* Viene memorizzato unicamente il tuo ID tecnico di chat Telegram (`chat_id`), necessario esclusivamente per recapitare gli avvisi ufficiali di servizio da te richiesti.
 • *Nessun tracciamento o profilazione:* Non raccogliamo dati personali, non utilizziamo strumenti di profilazione e nessun dato viene ceduto a terzi.
 • *Periodo di conservazione:* I dati di utilizzo inattivi da oltre 60 giorni vengono eliminati automaticamente dal database.
 • *Diritto alla cancellazione (Art. 17 - Oblio):* Puoi richiedere la cancellazione immediata e totale di qualsiasi informazione associata al tuo account inviando il comando /cancella."""
 
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle /start command."""
+    """Handle /start command and 'menu_main' callback."""
     chat = update.effective_chat
     if chat:
         # GDPR data minimization: store only technical chat_id
@@ -61,20 +65,46 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     # Clear wizard session state
     context.user_data.clear()
 
-    await update.effective_message.reply_text(
-        WELCOME_TEXT,
-        reply_markup=main_menu_keyboard(),
-        parse_mode="Markdown"
-    )
+    if update.callback_query:
+        query = update.callback_query
+        await query.answer()
+        try:
+            await query.edit_message_text(
+                WELCOME_TEXT,
+                reply_markup=main_menu_keyboard(),
+                parse_mode="Markdown"
+            )
+        except Exception as e:
+            if "Message is not modified" not in str(e):
+                logger.debug("Start command edit notice: %s", e)
+    else:
+        await update.effective_message.reply_text(
+            WELCOME_TEXT,
+            reply_markup=main_menu_keyboard(),
+            parse_mode="Markdown"
+        )
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle /help command."""
-    await update.effective_message.reply_text(
-        HELP_TEXT,
-        reply_markup=main_menu_keyboard(),
-        parse_mode="Markdown"
-    )
+    """Handle /help command and 'help_info' callback."""
+    if update.callback_query:
+        query = update.callback_query
+        await query.answer()
+        try:
+            await query.edit_message_text(
+                HELP_TEXT,
+                reply_markup=main_menu_keyboard(),
+                parse_mode="Markdown"
+            )
+        except Exception as e:
+            if "Message is not modified" not in str(e):
+                logger.debug("Help command edit notice: %s", e)
+    else:
+        await update.effective_message.reply_text(
+            HELP_TEXT,
+            reply_markup=main_menu_keyboard(),
+            parse_mode="Markdown"
+        )
 
 
 async def privacy_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

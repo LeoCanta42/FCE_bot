@@ -194,9 +194,102 @@ async def health_check():
     }
 
 
+# ==========================================
+# PWA & Static Assets Endpoints
+# ==========================================
+
+STATIC_DIR = Path(__file__).resolve().parent / "static"
+ICONS_DIR = STATIC_DIR / "icons"
+SW_PATH = STATIC_DIR / "sw.js"
+
+
+@router.get("/manifest.webmanifest", include_in_schema=False)
+@router.get("/manifest.json", include_in_schema=False)
+async def web_manifest():
+    """Serve PWA Web App Manifest."""
+    manifest_data = {
+        "name": "Ferrovia Circumetnea & Metro",
+        "short_name": "FCE Orari",
+        "description": "Orari ufficiali, itinerari e avvisi di servizio per Ferrovia Circumetnea e Metropolitana di Catania",
+        "start_url": "/",
+        "scope": "/",
+        "display": "standalone",
+        "background_color": "#ffffff",
+        "theme_color": "#991b1b",
+        "orientation": "portrait-primary",
+        "icons": [
+            {
+                "src": "/static/icons/icon-192.png",
+                "sizes": "192x192",
+                "type": "image/png",
+                "purpose": "any"
+            },
+            {
+                "src": "/static/icons/icon-512.png",
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "any"
+            },
+            {
+                "src": "/static/icons/maskable-512.png",
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "maskable"
+            },
+            {
+                "src": "/static/icons/icon.svg",
+                "sizes": "any",
+                "type": "image/svg+xml",
+                "purpose": "any"
+            }
+        ]
+    }
+    return JSONResponse(
+        content=manifest_data,
+        media_type="application/manifest+json"
+    )
+
+
+@router.get("/sw.js", include_in_schema=False)
+async def service_worker():
+    """Serve PWA Service Worker script at root scope."""
+    if SW_PATH.exists():
+        content = SW_PATH.read_text(encoding="utf-8")
+        return Response(
+            content=content,
+            media_type="application/javascript",
+            headers={
+                "Service-Worker-Allowed": "/",
+                "Cache-Control": "no-cache, no-store, must-revalidate"
+            }
+        )
+    raise HTTPException(status_code=404, detail="Service worker not found")
+
+
+@router.get("/static/icons/{filename}", include_in_schema=False)
+async def serve_icon(filename: str):
+    """Serve PWA application icons."""
+    file_path = ICONS_DIR / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Icon not found")
+    media_type = "image/svg+xml" if filename.endswith(".svg") else "image/png"
+    return Response(
+        content=file_path.read_bytes(),
+        media_type=media_type,
+        headers={"Cache-Control": "public, max-age=604800"}
+    )
+
+
 @router.get("/favicon.ico", include_in_schema=False)
 async def favicon():
-    """Return 204 for favicon requests."""
+    """Serve crisp favicon for browsers and bookmarks."""
+    icon_path = ICONS_DIR / "icon-192.png"
+    if icon_path.exists():
+        return Response(
+            content=icon_path.read_bytes(),
+            media_type="image/png",
+            headers={"Cache-Control": "public, max-age=604800"}
+        )
     return Response(status_code=204)
 
 

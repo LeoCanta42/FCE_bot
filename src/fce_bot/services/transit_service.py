@@ -63,10 +63,15 @@ class TransitService:
     def get_stops_by_type(
         self,
         transport_type: TransportType = TransportType.QUALSIASI,
-        limit: int = 100
+        limit: Optional[int] = None
     ) -> List[Stop]:
         """Get distinct stops available for a given transport type."""
-        sql = "SELECT stop_id, stop_name, normalized_name, lat, lon, has_bus, has_train, has_metro FROM stops WHERE 1=1"
+        sql = """
+            SELECT MIN(stop_id) as stop_id, stop_name, normalized_name, lat, lon,
+                   MAX(has_bus) as has_bus, MAX(has_train) as has_train, MAX(has_metro) as has_metro
+            FROM stops
+            WHERE 1=1
+        """
         if transport_type == TransportType.BUS:
             sql += " AND has_bus = 1"
         elif transport_type == TransportType.TRENO:
@@ -74,11 +79,15 @@ class TransitService:
         elif transport_type == TransportType.METRO:
             sql += " AND has_metro = 1"
 
-        sql += " ORDER BY stop_name LIMIT ?"
+        sql += " GROUP BY stop_name ORDER BY stop_name"
+        params = ()
+        if limit is not None and limit > 0:
+            sql += " LIMIT ?"
+            params = (limit,)
 
         with get_db(self.db_path) as conn:
             cur = conn.cursor()
-            rows = cur.execute(sql, (limit,)).fetchall()
+            rows = cur.execute(sql, params).fetchall()
             return [
                 Stop(
                     stop_id=r["stop_id"],

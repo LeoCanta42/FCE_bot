@@ -1,7 +1,7 @@
 """Document links and PDF download handlers."""
 
 import logging
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from fce_bot.services.documents_service import documents_service
 from fce_bot.bot.keyb import documents_keyboard, main_menu_keyboard
@@ -44,22 +44,40 @@ async def documents_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
         return
 
     if data == "doc_metro":
-        await query.message.reply_text(
-            f"🚇 *Orario Metropolitana di Catania:*\n{docs.metro_url}",
+        await query.edit_message_text(
+            f"🚇 *Orario Metropolitana di Catania*\n\n"
+            f"Consulta e scarica la tabella oraria ufficiale della Metro FCE (tratta Monte Po - Stesicoro).\n\n"
+            f"📄 [Scarica PDF Metropolitana]({docs.metro_url})",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🚇 Scarica PDF Metro", url=docs.metro_url)],
+                [InlineKeyboardButton("⬅️ Menu Principale", callback_data="menu_main")],
+            ]),
             parse_mode="Markdown"
         )
         return
 
     if data == "doc_train":
-        await query.message.reply_text(
-            f"🚆 *Orario Treni Superficie (Circumetnea):*\n{docs.train_url}",
+        await query.edit_message_text(
+            f"🚆 *Orario Treni Superficie (Circumetnea)*\n\n"
+            f"Consulta e scarica la tabella oraria ufficiale dei treni storici e moderni FCE (tratta Catania - Randazzo - Riposto).\n\n"
+            f"📄 [Scarica PDF Treni FCE]({docs.train_url})",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🚆 Scarica PDF Treni", url=docs.train_url)],
+                [InlineKeyboardButton("⬅️ Menu Principale", callback_data="menu_main")],
+            ]),
             parse_mode="Markdown"
         )
         return
 
     if data == "doc_bus":
-        await query.message.reply_text(
-            f"🚌 *Orario Autolinee (Bus):*\n{docs.bus_url}",
+        await query.edit_message_text(
+            f"🚌 *Orario Autolinee FCE (Bus)*\n\n"
+            f"Consulta e scarica la tabella oraria ufficiale delle corse in autobus FCE.\n\n"
+            f"📄 [Scarica PDF Autolinee FCE]({docs.bus_url})",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🚌 Scarica PDF Bus", url=docs.bus_url)],
+                [InlineKeyboardButton("⬅️ Menu Principale", callback_data="menu_main")],
+            ]),
             parse_mode="Markdown"
         )
         return

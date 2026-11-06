@@ -22,7 +22,15 @@ from fce_bot.bot.handlers.timetable import (
     fermate_command,
     wizard_callback,
 )
-from fce_bot.bot.handlers.news import news_command, news_callback
+from fce_bot.bot.handlers.news import (
+    news_command,
+    news_callback,
+    news_sub_menu_callback,
+    sub_enable_callback,
+    sub_disable_callback,
+    iscriviti_command,
+    disiscriviti_command,
+)
 from fce_bot.bot.handlers.documents import documents_command, documents_callback
 from fce_bot.bot.handlers.ai_chat import ai_message_handler, ai_help_callback
 from fce_bot.bot.handlers.admin import stats_command, sync_gtfs_command, broadcast_command
@@ -46,6 +54,8 @@ def create_bot_application() -> Application:
     app.add_handler(CommandHandler("viaggio", viaggio_command))
     app.add_handler(CommandHandler("fermate", fermate_command))
     app.add_handler(CommandHandler("news", news_command))
+    app.add_handler(CommandHandler("iscriviti", iscriviti_command))
+    app.add_handler(CommandHandler("disiscriviti", disiscriviti_command))
     app.add_handler(CommandHandler("documenti", documents_command))
     app.add_handler(CommandHandler("chat_id", chat_id_command))
     app.add_handler(CommandHandler("privacy", privacy_command))
@@ -62,6 +72,9 @@ def create_bot_application() -> Application:
     app.add_handler(CallbackQueryHandler(help_command, pattern="^help_info$"))
     app.add_handler(CallbackQueryHandler(ai_help_callback, pattern="^ai_help$"))
     app.add_handler(CallbackQueryHandler(news_callback, pattern="^news_latest$"))
+    app.add_handler(CallbackQueryHandler(news_sub_menu_callback, pattern="^news_sub_menu$"))
+    app.add_handler(CallbackQueryHandler(sub_enable_callback, pattern="^sub_enable$"))
+    app.add_handler(CallbackQueryHandler(sub_disable_callback, pattern="^sub_disable$"))
     app.add_handler(CallbackQueryHandler(documents_callback, pattern="^doc_"))
     app.add_handler(CallbackQueryHandler(wizard_callback))
 

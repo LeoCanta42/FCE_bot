@@ -35,12 +35,20 @@ async def ai_message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
     await context.bot.send_chat_action(chat_id=chat.id, action="typing")
 
     response = ai_service.answer_query(text)
-    await message.reply_text(
-        response.answer,
-        parse_mode="Markdown",
-        reply_markup=main_menu_keyboard(),
-        disable_web_page_preview=True
-    )
+    try:
+        await message.reply_text(
+            response.answer,
+            parse_mode="Markdown",
+            reply_markup=main_menu_keyboard(),
+            disable_web_page_preview=True
+        )
+    except Exception as e:
+        logger.warning("Markdown parse error on AI response: %s. Sending plain text fallback.", e)
+        await message.reply_text(
+            response.answer,
+            reply_markup=main_menu_keyboard(),
+            disable_web_page_preview=True
+        )
 
 
 async def ai_help_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -58,8 +66,12 @@ async def ai_help_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         "• _\"Dove posso scaricare i pdf degli orari?\"_\n\n"
         "👉 Scrivi adesso la tua richiesta qui sotto!"
     )
-    await query.edit_message_text(
-        help_msg,
-        reply_markup=main_menu_keyboard(),
-        parse_mode="Markdown"
-    )
+    try:
+        await query.edit_message_text(
+            help_msg,
+            reply_markup=main_menu_keyboard(),
+            parse_mode="Markdown"
+        )
+    except Exception as e:
+        if "Message is not modified" not in str(e):
+            logger.debug("AI help edit notice: %s", e)
