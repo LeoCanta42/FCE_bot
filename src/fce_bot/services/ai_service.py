@@ -69,8 +69,8 @@ class AIService:
         c = re.sub(r"[\?\.!,;:]+$", "", c)
         return c.strip() or None
 
-    def _extract_with_llm(self, text: str) -> dict:
-        """Call Gemini to extract origin, destination, time and intent if regex was uncertain."""
+    def _map_query_with_llm(self, text: str) -> dict:
+        """Generalized semantic mapper: calls Gemini to extract origin, destination, time, intent, and transport mode."""
         if not settings.GEMINI_API_KEY:
             return {}
         try:
@@ -79,9 +79,17 @@ class AIService:
             model = settings.GEMINI_MODEL or "gemini-3.5-flash-lite"
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
             prompt = (
-                f"Estrai le informazioni di viaggio dalla richiesta del passeggero (rete Ferrovia Circumetnea / Metro Catania): \"{text}\"\n"
-                "Rispondi ESCLUSIVAMENTE con un JSON con questa struttura esatta:\n"
-                "{\"origin\": \"nome_stazione_partenza o null\", \"destination\": \"nome_stazione_arrivo o null\", \"time\": \"HH:MM o null\", \"is_arrival_time\": true/false, \"transport\": \"QUALSIASI\"|\"TRENO\"|\"METRO\"|\"BUS\"}"
+                f"Sei l'assistente semantico ufficiale della Ferrovia Circumetnea e Metropolitana di Catania.\n"
+                f"Analizza la richiesta dell'utente: \"{text}\"\n\n"
+                "Estrai le informazioni di viaggio in formato JSON con questa struttura esatta:\n"
+                "{\n"
+                "  \"origin\": \"comune o stazione di partenza (oppure null se assente o domanda generica)\",\n"
+                "  \"destination\": \"comune o stazione di arrivo (oppure null)\",\n"
+                "  \"time\": \"orario specificato in formato HH:MM (es. 15:00) oppure null\",\n"
+                "  \"is_arrival_time\": true se l'orario indicato è l'orario desiderato di arrivo (es. 'arrivare per le 15', 'essere a ... entro le 15'), false se è orario di partenza,\n"
+                "  \"transport\": \"QUALSIASI\" | \"TRENO\" | \"METRO\" | \"BUS\",\n"
+                "  \"is_general_info\": true se è una richiesta generale (es. acquisto biglietti, info pdf) senza itinerario specifico\n"
+                "}"
             )
             payload = {
                 "contents": [{"role": "user", "parts": [{"text": prompt}]}],
@@ -93,11 +101,11 @@ class AIService:
                 raw_json = data["candidates"][0]["content"]["parts"][0]["text"]
                 return json.loads(raw_json)
         except Exception as e:
-            logger.debug("LLM extraction fallback error: %s", e)
+            logger.debug("LLM semantic extraction error: %s", e)
         return {}
 
-    def extract_entities(self, text: str) -> ExtractedEntities:
-        """Extract origin, destination, time, transport type and filter type from freeform text."""
+    def _extract_rule_based(self, text: str) -> ExtractedEntities:
+        """Deterministic rule-based parser used as offline fallback."""
         origin = None
         destination = None
         dep_time = None
@@ -112,7 +120,7 @@ class AIService:
         elif "bus" in lower_text or "autobus" in lower_text or "pullman" in lower_text or "navetta" in lower_text or "autolinee" in lower_text:
             ttype = TransportType.BUS
 
-        # 2. Detect arrival vs departure intent (e.g. "arrivare per le 15", "arrivo entro le 10")
+        # 2. Detect arrival vs departure intent
         is_arrival = bool(re.search(
             r"\b(?:arrivare|arrivo|arrivando|essere\s+(?:a|ad)|entro\s+le|per\s+le|prima\s+delle)\b",
             text,
@@ -120,7 +128,7 @@ class AIService:
         ))
         ftype = FilterType.ARRIVAL_BEFORE if is_arrival else FilterType.DEPARTURE_AFTER
 
-        # 3. Extract time (e.g. 14:30, 8.00, alle 9, per le 15, entro le 12, verso le 8)
+        # 3. Extract time
         time_match = re.search(
             r"\b(?:alle\s+|verso\s+le\s+|entro\s+le\s+|per\s+le\s+|prima\s+delle\s+|dopo\s+le\s+|intorno\s+alle\s+|ore\s+)?([0-1]?[0-9]|2[0-3])[:.]([0-5][0-9])\b",
             text,
@@ -138,17 +146,8 @@ class AIService:
             if hour_match:
                 h = hour_match.group(1)
                 dep_time = f"{int(h):02d}:00"
-            elif "mattina" in lower_text or "mattino" in lower_text:
-                dep_time = "08:00"
-            elif "pomeriggio" in lower_text:
-                dep_time = "14:00"
-            elif "sera" in lower_text:
-                dep_time = "18:00"
-            elif "mezzogiorno" in lower_text:
-                dep_time = "12:00"
 
-        # 4. Regex patterns for Italian travel queries
-        # Pattern 1: "da <Orig> a/ad/verso/per <Dest>"
+        # 4. Patterns
         pat1 = re.search(
             r"\bda\s+([\w\'\s]+?)\s+(?:a|ad|verso|per)\s+([\w\'\s]+?)(?:\s+(?:alle|verso|entro|per\s+le|prima\s+delle|dopo|ore|domani|oggi|in|con|che)|\?|\.|$)",
             text,
@@ -158,7 +157,6 @@ class AIService:
             origin = self._clean_entity(pat1.group(1))
             destination = self._clean_entity(pat1.group(2))
 
-        # Pattern 2: "per/ad/a/verso <Dest> da/partendo da <Orig>"
         if not origin or not destination:
             pat2 = re.search(
                 r"\b(?:per|ad|a|verso)\s+([\w\'\s]+?)\s+(?:da|partendo\s+da)\s+([\w\'\s]+?)(?:\s+(?:alle|verso|entro|per\s+le|prima\s+delle|dopo|ore|domani|oggi|in|con|che)|\?|\.|$)",
@@ -169,39 +167,16 @@ class AIService:
                 destination = self._clean_entity(pat2.group(1))
                 origin = self._clean_entity(pat2.group(2))
 
-        # Pattern 3: "partendo da <Orig> ... per/ad/a <Dest>"
         if not origin or not destination:
             pat3 = re.search(
-                r"\bpartendo\s+da\s+([\w\'\s]+?)\s+(?:per|a|ad|verso|fino\s+a)\s+([\w\'\s]+?)(?:\s+(?:alle|verso|entro|per\s+le|prima\s+delle|dopo|ore|domani|oggi|in|con|che)|\?|\.|$)",
-                text,
-                re.IGNORECASE
+                r"([\w\'\s]+?)\s*[-–>]\s*([\w\'\s]+?)(?:\s+(?:alle|verso|entro|per\s+le|prima\s+delle|dopo|ore|domani|oggi)|\?|\.|$)",
+                text
             )
             if pat3:
                 origin = self._clean_entity(pat3.group(1))
                 destination = self._clean_entity(pat3.group(2))
 
-        # Pattern 4: "<Orig> - <Dest>"
-        if not origin or not destination:
-            pat4 = re.search(
-                r"([\w\'\s]+?)\s*[-–>]\s*([\w\'\s]+?)(?:\s+(?:alle|verso|entro|per\s+le|prima\s+delle|dopo|ore|domani|oggi)|\?|\.|$)",
-                text
-            )
-            if pat4:
-                origin = self._clean_entity(pat4.group(1))
-                destination = self._clean_entity(pat4.group(2))
-
-        # Pattern 5: Separated clauses (e.g. "Devo essere ad Adrano per le 15 partendo da Paternò")
-        if not origin or not destination:
-            orig_m = re.search(r"\b(?:partendo\s+da|partenza\s+da|da)\s+([\w\']+)", text, re.IGNORECASE)
-            dest_m = re.search(r"\b(?:arrivare\s+(?:a|ad)|essere\s+(?:a|ad)|fino\s+a|diretto\s+a|verso|ad|a)\s+([\w\']+)", text, re.IGNORECASE)
-            if orig_m and not origin:
-                origin = self._clean_entity(orig_m.group(1))
-            if dest_m and not destination:
-                cand = self._clean_entity(dest_m.group(1))
-                if cand and cand.lower() not in ("le", "ore", "un", "una", "il", "la"):
-                    destination = cand
-
-        # 5. Station dictionary matching fallback
+        # Dictionary matching fallback
         if not origin or not destination:
             found_stops = []
             norm_text = normalize_stop_name(text)
@@ -215,19 +190,30 @@ class AIService:
                 if not destination:
                     destination = found_stops[1]
 
-        # 6. LLM extraction fallback for complex phrasing
-        if (not origin or not destination) and settings.GEMINI_API_KEY:
-            llm_data = self._extract_with_llm(text)
-            if llm_data:
-                origin = origin or self._clean_entity(llm_data.get("origin"))
-                destination = destination or self._clean_entity(llm_data.get("destination"))
-                dep_time = dep_time or llm_data.get("time")
-                if llm_data.get("is_arrival_time"):
-                    ftype = FilterType.ARRIVAL_BEFORE
-                if llm_data.get("transport"):
-                    ttype = TransportType.from_str(llm_data.get("transport"))
-
         return ExtractedEntities(origin, destination, dep_time, ttype, ftype)
+
+    def extract_entities(self, text: str) -> ExtractedEntities:
+        """Extract origin, destination, time, transport type and filter type from freeform text.
+        
+        Generalizes entity extraction using an intermediate LLM semantic parser when available,
+        falling back to deterministic rule-based parsing if offline or unconfigured.
+        """
+        # 1. Primary generalized intermediate mapping via Gemini
+        if settings.GEMINI_API_KEY:
+            llm_data = self._map_query_with_llm(text)
+            if llm_data:
+                orig = self._clean_entity(llm_data.get("origin"))
+                dest = self._clean_entity(llm_data.get("destination"))
+                time_val = llm_data.get("time")
+                is_arr = bool(llm_data.get("is_arrival_time"))
+                ftype = FilterType.ARRIVAL_BEFORE if is_arr else FilterType.DEPARTURE_AFTER
+                raw_t = llm_data.get("transport") or "QUALSIASI"
+                ttype = TransportType.from_str(str(raw_t))
+                if orig or dest or llm_data.get("is_general_info"):
+                    return ExtractedEntities(orig, dest, time_val, ttype, ftype)
+
+        # 2. Rule-based / dictionary fallback
+        return self._extract_rule_based(text)
 
     def answer_query(self, user_question: str) -> AIQueryResponse:
         """Process user natural language query and formulate response."""

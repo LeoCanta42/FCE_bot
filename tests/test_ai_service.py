@@ -3,14 +3,15 @@
 import pytest
 from fce_bot.core.models import TransportType
 from fce_bot.services.ai_service import ai_service
+from fce_bot.data.db import normalize_stop_name
 
 
 def test_extract_entities_standard_format():
     """Verify origin, destination, and time extraction."""
     text = "Come posso andare da Paterno a Randazzo alle 14:30 in treno?"
     origin, dest, time_val, ttype = ai_service.extract_entities(text)
-    assert origin.upper() == "PATERNO"
-    assert dest.upper() == "RANDAZZO"
+    assert normalize_stop_name(origin) == "PATERNO"
+    assert normalize_stop_name(dest) == "RANDAZZO"
     assert time_val == "14:30"
     assert ttype == TransportType.TRENO
 
@@ -19,8 +20,8 @@ def test_extract_entities_metro():
     """Verify metro query extraction."""
     text = "C'è la metro da Monte Po a Borgo alle 9?"
     origin, dest, time_val, ttype = ai_service.extract_entities(text)
-    assert "MONTE PO" in origin.upper()
-    assert "BORGO" in dest.upper()
+    assert "MONTE PO" in normalize_stop_name(origin)
+    assert "BORGO" in normalize_stop_name(dest)
     assert time_val == "09:00"
     assert ttype == TransportType.METRO
 
@@ -55,7 +56,18 @@ def test_ai_arrival_query_paterno_adrano():
     """Verify natural language query asking to arrive by a specific time."""
     query = "Trovami una soluzione che mi faccia arrivare da Paterno ad Adrano per le 15"
     resp = ai_service.answer_query(query)
-    assert resp.origin is not None and "paterno" in resp.origin.lower()
+    assert resp.origin is not None and any(w in resp.origin.lower() for w in ["paterno", "paternò"])
+    assert resp.destination is not None and "adrano" in resp.destination.lower()
+    assert resp.time == "15:00"
+    assert resp.itineraries_count > 0
+    assert any(hour in resp.answer for hour in ["14:", "14.5", "14.1", "14.2"])
+
+
+def test_ai_arrival_query_varied_phrasing():
+    """Verify natural language query with colloquial phrasing ('Dimmi come faccio ad essere a...')."""
+    query = "Dimmi come faccio ad essere a Adrano partendo da Paterno per le 15"
+    resp = ai_service.answer_query(query)
+    assert resp.origin is not None and any(w in resp.origin.lower() for w in ["paterno", "paternò"])
     assert resp.destination is not None and "adrano" in resp.destination.lower()
     assert resp.time == "15:00"
     assert resp.itineraries_count > 0
