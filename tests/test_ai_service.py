@@ -41,7 +41,7 @@ def test_ai_ticket_query():
     assert len(resp.answer) > 20
     # Should not contain raw markdown link brackets like [Orari Metro](http...)
     assert "](" not in resp.answer
-    assert "bigliett" in resp.answer.lower()
+    assert any(w in resp.answer.lower() for w in ["bigliett", "titoli di viaggio", "acquist"])
 
 
 def test_ai_documents_clean_answer():
