@@ -2,6 +2,8 @@
 
 import sqlite3
 import re
+import os
+import shutil
 from pathlib import Path
 from contextlib import contextmanager
 from typing import Generator
@@ -23,7 +25,20 @@ def normalize_stop_name(s: str) -> str:
 
 
 def get_db_path() -> Path:
-    """Return database file path, ensuring parent directory exists."""
+    """Return database file path, ensuring writable copy in /tmp on Vercel/serverless environments."""
+    if os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME"):
+        tmp_db = Path("/tmp/fce_lines.db")
+        if not tmp_db.exists():
+            orig_db = settings.DATABASE_PATH
+            if orig_db.exists():
+                try:
+                    shutil.copy2(orig_db, tmp_db)
+                except Exception as err:
+                    # Fallback to original if copy fails
+                    pass
+        if tmp_db.exists():
+            return tmp_db
+
     path = settings.DATABASE_PATH
     path.parent.mkdir(parents=True, exist_ok=True)
     return path
