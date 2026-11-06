@@ -263,10 +263,67 @@ async def test_bot_post_init_and_commands():
     await post_init(mock_app)
     mock_app.bot.set_my_commands.assert_awaited_once_with(PUBLIC_BOT_COMMANDS)
 
+    # Verify MessageHandler only matches private 1-to-1 chats and rejects channels/groups
+    from telegram.ext import MessageHandler
+    from telegram import Message as TgMessage, Chat as TgChat
+    msg_handlers = [h for h in app.handlers[0] if isinstance(h, MessageHandler)]
+    assert len(msg_handlers) == 1
+    u_channel = Update(999, channel_post=TgMessage(999, None, TgChat(-100123, "channel"), text="prova"))
+    assert msg_handlers[0].filters.check_update(u_channel) is False
+    u_group = Update(999, message=TgMessage(999, None, TgChat(-100456, "supergroup"), text="prova"))
+    assert msg_handlers[0].filters.check_update(u_group) is False
+    u_priv = Update(999, message=TgMessage(999, None, TgChat(12345, "private"), text="prova"))
+    assert msg_handlers[0].filters.check_update(u_priv) is True
+
     # Post init with dummy token should safely return without network call
     mock_dummy_app = MagicMock()
     mock_dummy_app.bot.token = "0000000000:DUMMY"
     mock_dummy_app.bot.set_my_commands = AsyncMock()
     await post_init(mock_dummy_app)
     mock_dummy_app.bot.set_my_commands.assert_not_called()
+
+
+@pytest.mark.anyio
+async def test_channel_and_group_messages_are_strictly_ignored():
+    """Verify bot never responds to messages from channels, groups, or channel posts."""
+    from fce_bot.bot.handlers.ai_chat import ai_message_handler
+    from fce_bot.bot.handlers.start import start_command
+
+    # 1. Channel post update
+    channel_update = MagicMock(spec=Update)
+    channel_update.channel_post = MagicMock()
+    channel_update.callback_query = None
+    channel_chat = MagicMock()
+    channel_chat.type = "channel"
+    channel_update.effective_chat = channel_chat
+    channel_msg = MagicMock()
+    channel_msg.text = "A che ora passa la metro?"
+    channel_msg.reply_text = AsyncMock()
+    channel_update.effective_message = channel_msg
+    context = MagicMock()
+    context.bot.send_chat_action = AsyncMock()
+
+    await ai_message_handler(channel_update, context)
+    channel_msg.reply_text.assert_not_called()
+    context.bot.send_chat_action.assert_not_called()
+
+    # 2. Supergroup / Group chat message
+    group_update = MagicMock(spec=Update)
+    group_update.channel_post = None
+    group_chat = MagicMock()
+    group_chat.type = "supergroup"
+    group_update.effective_chat = group_chat
+    group_msg = MagicMock()
+    group_msg.text = "C'è un treno per Randazzo?"
+    group_msg.reply_text = AsyncMock()
+    group_update.effective_message = group_msg
+
+    await ai_message_handler(group_update, context)
+    group_msg.reply_text.assert_not_called()
+    context.bot.send_chat_action.assert_not_called()
+
+    # 3. Start command on channel
+    await start_command(channel_update, context)
+    channel_msg.reply_text.assert_not_called()
+
 

@@ -62,6 +62,9 @@ PRIVACY_TEXT = """🔒 *Informativa sulla Privacy & GDPR (Regolamento UE 2016/67
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /start command and 'menu_main' callback."""
     chat = update.effective_chat
+    if chat and getattr(chat, "type", None) in ("channel", "group", "supergroup"):
+        return
+
     if chat:
         # GDPR data minimization: store only technical chat_id
         users_repo.register_or_update(chat_id=chat.id)

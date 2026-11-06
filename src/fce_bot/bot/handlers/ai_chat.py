@@ -12,7 +12,14 @@ users_repo = UsersRepository()
 
 
 async def ai_message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle freeform natural language text messages using AI service."""
+    """Handle freeform natural language text messages using AI service (private chat only)."""
+    # Strictly ignore channel posts, groups, or non-private updates
+    if getattr(update, "channel_post", None):
+        return
+    chat = update.effective_chat
+    if not chat or getattr(chat, "type", None) in ("channel", "group", "supergroup"):
+        return
+
     message = update.effective_message
     if not message or not message.text:
         return

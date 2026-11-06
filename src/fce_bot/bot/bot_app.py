@@ -77,24 +77,26 @@ def create_bot_application() -> Application:
     builder = ApplicationBuilder().token(token).post_init(post_init)
     app = builder.build()
 
-    # Commands
-    app.add_handler(CommandHandler("start", start_command))
-    app.add_handler(CommandHandler("help", help_command))
-    app.add_handler(CommandHandler("viaggio", viaggio_command))
-    app.add_handler(CommandHandler("fermate", fermate_command))
-    app.add_handler(CommandHandler("news", news_command))
-    app.add_handler(CommandHandler("iscriviti", iscriviti_command))
-    app.add_handler(CommandHandler("disiscriviti", disiscriviti_command))
-    app.add_handler(CommandHandler("documenti", documents_command))
-    app.add_handler(CommandHandler("chat_id", chat_id_command))
-    app.add_handler(CommandHandler("privacy", privacy_command))
-    app.add_handler(CommandHandler("cancella", cancella_command))
-    app.add_handler(CommandHandler("stop", cancella_command))
+    private_chat = filters.ChatType.PRIVATE
 
-    # Admin commands
-    app.add_handler(CommandHandler("stats", stats_command))
-    app.add_handler(CommandHandler("sync_gtfs", sync_gtfs_command))
-    app.add_handler(CommandHandler("broadcast", broadcast_command))
+    # Commands - strictly restricted to direct private 1-to-1 chats
+    app.add_handler(CommandHandler("start", start_command, filters=private_chat))
+    app.add_handler(CommandHandler("help", help_command, filters=private_chat))
+    app.add_handler(CommandHandler("viaggio", viaggio_command, filters=private_chat))
+    app.add_handler(CommandHandler("fermate", fermate_command, filters=private_chat))
+    app.add_handler(CommandHandler("news", news_command, filters=private_chat))
+    app.add_handler(CommandHandler("iscriviti", iscriviti_command, filters=private_chat))
+    app.add_handler(CommandHandler("disiscriviti", disiscriviti_command, filters=private_chat))
+    app.add_handler(CommandHandler("documenti", documents_command, filters=private_chat))
+    app.add_handler(CommandHandler("chat_id", chat_id_command, filters=private_chat))
+    app.add_handler(CommandHandler("privacy", privacy_command, filters=private_chat))
+    app.add_handler(CommandHandler("cancella", cancella_command, filters=private_chat))
+    app.add_handler(CommandHandler("stop", cancella_command, filters=private_chat))
+
+    # Admin commands (strictly private chat only)
+    app.add_handler(CommandHandler("stats", stats_command, filters=private_chat))
+    app.add_handler(CommandHandler("sync_gtfs", sync_gtfs_command, filters=private_chat))
+    app.add_handler(CommandHandler("broadcast", broadcast_command, filters=private_chat))
 
     # Callback queries
     app.add_handler(CallbackQueryHandler(start_command, pattern="^menu_main$"))
@@ -107,7 +109,7 @@ def create_bot_application() -> Application:
     app.add_handler(CallbackQueryHandler(documents_callback, pattern="^doc_"))
     app.add_handler(CallbackQueryHandler(wizard_callback))
 
-    # Natural language AI chat fallback
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, ai_message_handler))
+    # Natural language AI chat fallback - strictly private 1-to-1 chat only
+    app.add_handler(MessageHandler(private_chat & filters.TEXT & ~filters.COMMAND, ai_message_handler))
 
     return app
