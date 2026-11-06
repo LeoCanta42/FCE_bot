@@ -25,9 +25,12 @@ from fce_bot.data.users_repo import UsersRepository
 
 
 def test_help_text_markdown_syntax():
-    """Verify HELP_TEXT has balanced markdown formatting and no raw unescaped chat_id."""
+    """Verify HELP_TEXT has balanced markdown formatting and developer attribution."""
     assert "`chat_id`" in HELP_TEXT
     assert "chat_id " not in HELP_TEXT
+    # Check developer and repository references
+    assert "LeoCanta42" in HELP_TEXT
+    assert "https://github.com/LeoCanta42/FCE_bot" in HELP_TEXT
     # Check that italic/bold markers don't leave hanging tags
     assert HELP_TEXT.count("*") % 2 == 0
 

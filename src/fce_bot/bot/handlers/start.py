@@ -42,7 +42,11 @@ _"C'è un treno da Randazzo alle 12:30?"_
 Puoi iscriverti agli avvisi in tempo reale su scioperi e ritardi premendo il pulsante *Notifiche & Avvisi* o inviando il comando /iscriviti (e disattivare con /disiscriviti).
 
 6. *Privacy:*
-Il bot memorizza esclusivamente il `chat_id` e la data di ultimo accesso per permetterti di ricevere eventuali avvisi di servizio qualora tu decida di iscriverti manualmente. Nessun messaggio broadcast viene inviato senza la tua esplicita iscrizione."""
+Il bot memorizza esclusivamente il `chat_id` e la data di ultimo accesso per permetterti di ricevere eventuali avvisi di servizio qualora tu decida di iscriverti manualmente. Nessun messaggio broadcast viene inviato senza la tua esplicita iscrizione.
+
+👨‍💻 *Sviluppatore & Progetto:*
+Creato e sviluppato da *LeoCanta42*.
+Progetto open-source disponibile su [GitHub](https://github.com/LeoCanta42/FCE_bot)."""
 
 
 PRIVACY_TEXT = """🔒 *Informativa sulla Privacy & GDPR (Regolamento UE 2016/679)*
