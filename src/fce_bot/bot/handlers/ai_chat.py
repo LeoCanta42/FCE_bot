@@ -6,6 +6,7 @@ from telegram.ext import ContextTypes
 from fce_bot.services.ai_service import ai_service
 from fce_bot.data.users_repo import UsersRepository
 from fce_bot.bot.keyb import main_menu_keyboard
+from fce_bot.bot.handlers.admin import is_admin, handle_admin_text_input
 
 logger = logging.getLogger(__name__)
 users_repo = UsersRepository()
@@ -34,9 +35,19 @@ async def ai_message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if user and chat:
         users_repo.register_or_update(
             chat_id=chat.id,
-            username=user.username,
-            first_name=user.first_name
+            username=getattr(user, "username", None),
+            first_name=getattr(user, "first_name", None)
         )
+
+    uid = getattr(user, "id", None) or getattr(chat, "id", None)
+    admin_flag = is_admin(uid) if isinstance(uid, int) else False
+
+    # If admin is currently in an interactive admin prompt (user search / broadcast), handle it here
+    user_data = getattr(context, "user_data", None)
+    if admin_flag and isinstance(user_data, dict) and user_data.get("admin_state"):
+        handled = await handle_admin_text_input(update, context)
+        if handled:
+            return
 
     # Permission check: AI is restricted to admin and authorized users only
     if not users_repo.is_ai_allowed(chat.id):
@@ -51,7 +62,7 @@ async def ai_message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await message.reply_text(
             restricted_msg,
             parse_mode="Markdown",
-            reply_markup=main_menu_keyboard()
+            reply_markup=main_menu_keyboard(is_admin_user=admin_flag)
         )
         return
 
@@ -63,14 +74,14 @@ async def ai_message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await message.reply_text(
             response.answer,
             parse_mode="Markdown",
-            reply_markup=main_menu_keyboard(),
+            reply_markup=main_menu_keyboard(is_admin_user=admin_flag),
             disable_web_page_preview=True
         )
     except Exception as e:
         logger.warning("Markdown parse error on AI response: %s. Sending plain text fallback.", e)
         await message.reply_text(
             response.answer,
-            reply_markup=main_menu_keyboard(),
+            reply_markup=main_menu_keyboard(is_admin_user=admin_flag),
             disable_web_page_preview=True
         )
 
@@ -81,7 +92,10 @@ async def ai_help_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     await query.answer()
 
     chat = update.effective_chat
+    user = update.effective_user
     chat_id = chat.id if chat else None
+    uid = getattr(user, "id", None) or chat_id
+    admin_flag = is_admin(uid) if isinstance(uid, int) else False
 
     # If user is not authorized for AI, display restriction notice and instructions
     if chat_id and not users_repo.is_ai_allowed(chat_id):
@@ -95,7 +109,7 @@ async def ai_help_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         try:
             await query.edit_message_text(
                 restricted_msg,
-                reply_markup=main_menu_keyboard(),
+                reply_markup=main_menu_keyboard(is_admin_user=admin_flag),
                 parse_mode="Markdown"
             )
         except Exception as e:
@@ -116,7 +130,7 @@ async def ai_help_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     try:
         await query.edit_message_text(
             help_msg,
-            reply_markup=main_menu_keyboard(),
+            reply_markup=main_menu_keyboard(is_admin_user=admin_flag),
             parse_mode="Markdown"
         )
     except Exception as e:

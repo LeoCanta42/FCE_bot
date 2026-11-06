@@ -198,6 +198,12 @@ docker-compose logs -f
 | `/documenti` | Link diretti per scaricare i PDF ufficiali (Metro, Treni, Bus) |
 | `/chat_id` | Mostra l'ID univoco della chat corrente |
 | `/help` | Guida completa alle funzionalità |
+| `/admin` *(Admin)* | Apre il **Pannello di Controllo Admin** interattivo (visibile anche da `/start`) |
+| `/user <@username\|id>` *(Admin)* | Cerca un utente per `@username` o `chat_id` per gestire AI, notifiche o eliminare il record |
+| `/users [filtro]` *(Admin)* | Elenca o cerca tutti gli utenti registrati con pulsanti di gestione |
+| `/allow_ai` / `/disallow_ai <@user\|id>` *(Admin)* | Abilita o revoca l'accesso all'Assistente AI per un utente |
+| `/sub_user` / `/unsub_user <@user\|id>` *(Admin)* | Attiva o disattiva la sottoscrizione alle notifiche per un utente |
+| `/delete_user <@user\|id>` *(Admin)* | Cancella definitivamente il record di un utente dal database |
 | `/stats` *(Admin)* | Statistiche su utenti e database GTFS |
 | `/sync_gtfs` *(Admin)* | Risincronizza il database scaricando i dati da circumetnea.it |
 | `/broadcast <testo>` *(Admin)* | Invia un annuncio a tutti gli utenti iscritti |

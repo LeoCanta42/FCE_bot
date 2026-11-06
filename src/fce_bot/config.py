@@ -3,17 +3,21 @@
 import os
 from pathlib import Path
 from typing import List, Optional
-from pydantic import Field
+from dotenv import load_dotenv
+from pydantic import Field, AliasChoices
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+load_dotenv(BASE_DIR / ".env", override=True)
+load_dotenv(BASE_DIR / ".env.local", override=True)
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=(".env", ".env.local"),
+        env_file=(str(BASE_DIR / ".env"), str(BASE_DIR / ".env.local")),
         env_file_encoding="utf-8",
-        extra="ignore"
+        extra="ignore",
+        populate_by_name=True,
     )
 
     # Project metadata
@@ -36,6 +40,7 @@ class Settings(BaseSettings):
     )
     ADMIN_USER_IDS_RAW: str = Field(
         default_factory=lambda: os.getenv("ADMIN_USER_IDS", ""),
+        validation_alias=AliasChoices("ADMIN_USER_IDS", "ADMIN_USER_IDS_RAW"),
         description="Comma-separated Telegram user IDs of administrators"
     )
 
@@ -53,7 +58,8 @@ class Settings(BaseSettings):
 
     # AI Trip Assistant (Exclusively Google Gemini)
     GEMINI_API_KEY: Optional[str] = Field(
-        default_factory=lambda: os.getenv("GEMINI_API_KEY") or os.getenv("AI_API_KEY")
+        default_factory=lambda: os.getenv("GEMINI_API_KEY") or os.getenv("AI_API_KEY"),
+        validation_alias=AliasChoices("GEMINI_API_KEY", "AI_API_KEY")
     )
     GEMINI_MODEL: str = "gemini-3.5-flash-lite"
 

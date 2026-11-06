@@ -4,6 +4,7 @@ import logging
 from telegram import Update
 from telegram.ext import ContextTypes
 from fce_bot.bot.keyb import main_menu_keyboard
+from fce_bot.bot.handlers.admin import is_admin
 from fce_bot.data.users_repo import UsersRepository
 
 logger = logging.getLogger(__name__)
@@ -42,7 +43,7 @@ _"C'è un treno da Randazzo alle 12:30?"_
 Puoi iscriverti agli avvisi in tempo reale su scioperi e ritardi premendo il pulsante *Notifiche & Avvisi* o inviando il comando /iscriviti (e disattivare con /disiscriviti).
 
 6. *Privacy:*
-Il bot memorizza esclusivamente il `chat_id` e la data di ultimo accesso per permetterti di ricevere eventuali avvisi di servizio qualora tu decida di iscriverti manualmente. Nessun messaggio broadcast viene inviato senza la tua esplicita iscrizione.
+Quando utilizzi il bot, vengono memorizzati `chat_id`, eventuale `@username`, nome e data di ultimo accesso (`last_active`) con *notifiche e AI disattivate di default*. Questo permette di gestire eventuali abilitazioni (notifiche o accesso AI) e di pulire automaticamente i profili inattivi dopo 60 giorni. Se non desideri più usare il bot, puoi eliminare istantaneamente e definitivamente il tuo record con il comando /cancella.
 
 👨‍💻 *Sviluppatore & Progetto:*
 Creato e sviluppato da *LeoCanta42*.
@@ -52,11 +53,14 @@ Progetto open-source disponibile su [GitHub](https://github.com/LeoCanta42/FCE_b
 PRIVACY_TEXT = """🔒 *Informativa sulla Privacy & GDPR (Regolamento UE 2016/679)*
 
 • *Finalità del servizio:* Questo bot fornisce informazioni su orari, linee e avvisi di servizio della Ferrovia Circumetnea e Metropolitana di Catania.
-• *Consenso e Notifiche (Art. 6/7):* Nessun utente viene iscritto automaticamente agli avvisi di servizio. La ricezione delle notifiche avviene esclusivamente su richiesta manuale tramite pulsante dedicato o comando /iscriviti.
-• *Dati trattati (Minimizzazione Art. 5):* Viene memorizzato unicamente il tuo ID tecnico di chat Telegram (`chat_id`), necessario esclusivamente per recapitare gli avvisi ufficiali di servizio da te richiesti.
-• *Nessun tracciamento o profilazione:* Non raccogliamo dati personali, non utilizziamo strumenti di profilazione e nessun dato viene ceduto a terzi.
-• *Periodo di conservazione:* I dati di utilizzo inattivi da oltre 60 giorni vengono eliminati automaticamente dal database.
-• *Diritto alla cancellazione (Art. 17 - Oblio):* Puoi richiedere la cancellazione immediata e totale di qualsiasi informazione associata al tuo account inviando il comando /cancella."""
+• *Registrazione Tecnica e Dati Trattati (Art. 5 e Art. 6):* Quando interagisci con il bot in chat privata, il sistema registra il tuo `chat_id` tecnico, l'eventuale `@username`, il nome (`first_name`) e il timestamp di ultimo utilizzo (`last_active`), impostando **notifiche disattivate** e **accesso AI disabilitato** per impostazione predefinita.
+• *Perché vengono conservati questi dati:* Questi dati sono utilizzati esclusivamente per:
+  1. Consentire all'amministratore o all'utente di gestire l'abilitazione all'Assistente AI o l'iscrizione volontaria agli avvisi di servizio;
+  2. Effettuare la pulizia automatica (`auto-clean`) dei profili inattivi tramite la data di ultimo accesso.
+• *Consenso alle Notifiche (Opt-in esplicito):* Nessun utente viene iscritto automaticamente agli avvisi broadcast. La ricezione delle notifiche avviene solo su esplicita attivazione tramite pulsante dedicato o comando /iscriviti (disattivabile in qualsiasi momento con /disiscriviti).
+• *Nessuna profilazione o cessione a terzi:* Non effettuiamo tracciamento pubblicitario o profilazione commerciale e nessun dato viene ceduto o condiviso con terze parti.
+• *Periodo di conservazione (Auto-Clean 60 giorni):* I record degli utenti che non interagiscono con il bot da oltre 60 giorni vengono rimossi automaticamente dal database.
+• *Diritto alla Cancellazione / Oblio (Art. 17 GDPR):* Se non desideri più utilizzare il bot o vuoi rimuovere i tuoi dati, sei libero di farlo in qualsiasi momento inviando il comando /cancella (o /stop): il tuo record verrà eliminato immediatamente e definitivamente dal database."""
 
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -65,12 +69,19 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     if chat and getattr(chat, "type", None) in ("channel", "group", "supergroup"):
         return
 
+    user = update.effective_user
     if chat:
-        # GDPR data minimization: store only technical chat_id
-        users_repo.register_or_update(chat_id=chat.id)
+        users_repo.register_or_update(
+            chat_id=chat.id,
+            username=getattr(user, "username", None) if user else None,
+            first_name=getattr(user, "first_name", None) if user else None,
+        )
 
-    # Clear wizard session state
+    # Clear wizard / admin session state
     context.user_data.clear()
+
+    uid = getattr(user, "id", None) or (getattr(chat, "id", None) if chat else None)
+    admin_flag = is_admin(uid) if isinstance(uid, int) else False
 
     if update.callback_query:
         query = update.callback_query
@@ -78,7 +89,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         try:
             await query.edit_message_text(
                 WELCOME_TEXT,
-                reply_markup=main_menu_keyboard(),
+                reply_markup=main_menu_keyboard(is_admin_user=admin_flag),
                 parse_mode="Markdown"
             )
         except Exception as e:
@@ -87,20 +98,25 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     else:
         await update.effective_message.reply_text(
             WELCOME_TEXT,
-            reply_markup=main_menu_keyboard(),
+            reply_markup=main_menu_keyboard(is_admin_user=admin_flag),
             parse_mode="Markdown"
         )
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /help command and 'help_info' callback."""
+    user = update.effective_user
+    chat = update.effective_chat
+    uid = getattr(user, "id", None) or (getattr(chat, "id", None) if chat else None)
+    admin_flag = is_admin(uid) if isinstance(uid, int) else False
+
     if update.callback_query:
         query = update.callback_query
         await query.answer()
         try:
             await query.edit_message_text(
                 HELP_TEXT,
-                reply_markup=main_menu_keyboard(),
+                reply_markup=main_menu_keyboard(is_admin_user=admin_flag),
                 parse_mode="Markdown"
             )
         except Exception as e:
@@ -109,7 +125,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     else:
         await update.effective_message.reply_text(
             HELP_TEXT,
-            reply_markup=main_menu_keyboard(),
+            reply_markup=main_menu_keyboard(is_admin_user=admin_flag),
             parse_mode="Markdown"
         )
 

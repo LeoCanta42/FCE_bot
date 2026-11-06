@@ -106,7 +106,7 @@ def init_db(path: Path = None) -> None:
                 username TEXT,
                 first_name TEXT,
                 last_active TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                is_subscribed INTEGER DEFAULT 1,
+                is_subscribed INTEGER DEFAULT 0,
                 ai_allowed INTEGER DEFAULT 0
             )
         """)

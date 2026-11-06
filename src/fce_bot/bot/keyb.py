@@ -5,9 +5,9 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from fce_bot.core.models import TransportType, FilterType, Stop
 
 
-def main_menu_keyboard() -> InlineKeyboardMarkup:
-    """Main dashboard menu buttons."""
-    return InlineKeyboardMarkup([
+def main_menu_keyboard(is_admin_user: bool = False) -> InlineKeyboardMarkup:
+    """Main dashboard menu buttons (includes Admin Panel button if user is an admin)."""
+    rows = [
         [
             InlineKeyboardButton("🚌 Orario Bus", callback_data="doc_bus"),
             InlineKeyboardButton("🚆 Orario Treni", callback_data="doc_train"),
@@ -26,6 +26,156 @@ def main_menu_keyboard() -> InlineKeyboardMarkup:
         ],
         [
             InlineKeyboardButton("ℹ️ Guida & Info", callback_data="help_info"),
+        ],
+    ]
+    if is_admin_user:
+        rows.append([
+            InlineKeyboardButton("🛠 Pannello Admin", callback_data="adm_menu"),
+        ])
+    return InlineKeyboardMarkup(rows)
+
+
+def admin_panel_keyboard() -> InlineKeyboardMarkup:
+    """Dashboard keyboard for administrative management."""
+    return InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("👥 Gestione Utenti", callback_data="adm_users:all:0"),
+            InlineKeyboardButton("🔎 Cerca Utente", callback_data="adm_search_prompt"),
+        ],
+        [
+            InlineKeyboardButton("📊 Statistiche", callback_data="adm_stats"),
+            InlineKeyboardButton("🔄 Sincronizza GTFS", callback_data="adm_sync_gtfs"),
+        ],
+        [
+            InlineKeyboardButton("📢 Invia Broadcast", callback_data="adm_broadcast_prompt"),
+            InlineKeyboardButton("📰 Controlla Notizie", callback_data="adm_check_news"),
+        ],
+        [
+            InlineKeyboardButton("🧹 Pulisci Inattivi (60gg)", callback_data="adm_prune"),
+        ],
+        [
+            InlineKeyboardButton("⬅️ Menu Principale", callback_data="menu_main"),
+        ],
+    ])
+
+
+def admin_users_list_keyboard(
+    users: List[dict],
+    filter_mode: str = "all",
+    page: int = 0,
+    page_size: int = 8
+) -> InlineKeyboardMarkup:
+    """Paginated inline keyboard of users for the admin panel."""
+    total_users = len(users)
+    total_pages = max(1, (total_users + page_size - 1) // page_size)
+    page = max(0, min(page, total_pages - 1))
+
+    start_idx = page * page_size
+    page_users = users[start_idx : start_idx + page_size]
+
+    keyboard = []
+
+    # Filter tabs row
+    f_all = "🔹 Tutti" if filter_mode == "all" else "Tutti"
+    f_sub = "🔹 🔔 Iscritti" if filter_mode == "sub" else "🔔 Iscritti"
+    f_ai = "🔹 🤖 AI" if filter_mode == "ai" else "🤖 AI"
+    keyboard.append([
+        InlineKeyboardButton(f_all, callback_data="adm_users:all:0"),
+        InlineKeyboardButton(f_sub, callback_data="adm_users:sub:0"),
+        InlineKeyboardButton(f_ai, callback_data="adm_users:ai:0"),
+    ])
+
+    for u in page_users:
+        cid = str(u.get("chat_id", ""))
+        uname = u.get("username")
+        fname = u.get("first_name")
+        is_sub = bool(u.get("is_subscribed"))
+        is_ai = bool(u.get("ai_allowed"))
+
+        badges = ""
+        if is_ai:
+            badges += "🤖"
+        if is_sub:
+            badges += "🔔"
+        if not badges:
+            badges = "👤"
+
+        if uname:
+            label = f"{badges} @{uname}"
+            if fname:
+                label += f" ({fname[:12]})"
+        elif fname:
+            label = f"{badges} {fname[:16]} [{cid}]"
+        else:
+            label = f"{badges} ID: {cid}"
+
+        cb_val = f"adm_u_view:{cid}:{filter_mode}:{page}"[:64]
+        keyboard.append([
+            InlineKeyboardButton(label[:40], callback_data=cb_val)
+        ])
+
+    if total_pages > 1:
+        nav_row = []
+        if page > 0:
+            nav_row.append(InlineKeyboardButton("⬅️ Prec", callback_data=f"adm_users:{filter_mode}:{page - 1}"))
+        nav_row.append(InlineKeyboardButton(f"📄 {page + 1}/{total_pages}", callback_data="noop"))
+        if page < total_pages - 1:
+            nav_row.append(InlineKeyboardButton("Succ ➡️", callback_data=f"adm_users:{filter_mode}:{page + 1}"))
+        keyboard.append(nav_row)
+
+    keyboard.append([
+        InlineKeyboardButton("🔎 Cerca per @username / ID", callback_data="adm_search_prompt"),
+    ])
+    keyboard.append([
+        InlineKeyboardButton("⬅️ Pannello Admin", callback_data="adm_menu"),
+    ])
+    return InlineKeyboardMarkup(keyboard)
+
+
+def admin_user_detail_keyboard(
+    user: dict,
+    back_filter: str = "all",
+    back_page: int = 0
+) -> InlineKeyboardMarkup:
+    """Action keyboard for a single user record in the admin panel."""
+    cid = str(user.get("chat_id", ""))
+    is_sub = bool(user.get("is_subscribed"))
+    is_ai = bool(user.get("ai_allowed"))
+
+    ai_btn = (
+        InlineKeyboardButton("🚫 Disabilita AI", callback_data=f"adm_u_ai:{cid}:0:{back_filter}:{back_page}")
+        if is_ai
+        else InlineKeyboardButton("✅ Abilita AI", callback_data=f"adm_u_ai:{cid}:1:{back_filter}:{back_page}")
+    )
+    sub_btn = (
+        InlineKeyboardButton("🔕 Disattiva Notifiche", callback_data=f"adm_u_sub:{cid}:0:{back_filter}:{back_page}")
+        if is_sub
+        else InlineKeyboardButton("🔔 Attiva Notifiche", callback_data=f"adm_u_sub:{cid}:1:{back_filter}:{back_page}")
+    )
+
+    return InlineKeyboardMarkup([
+        [ai_btn],
+        [sub_btn],
+        [InlineKeyboardButton("🗑 Cancella Utente (Elimina Record)", callback_data=f"adm_u_del_ask:{cid}:{back_filter}:{back_page}")],
+        [
+            InlineKeyboardButton("⬅️ Lista Utenti", callback_data=f"adm_users:{back_filter}:{back_page}"),
+            InlineKeyboardButton("🛠 Pannello Admin", callback_data="adm_menu"),
+        ],
+    ])
+
+
+def admin_user_delete_confirm_keyboard(
+    chat_id: str,
+    back_filter: str = "all",
+    back_page: int = 0
+) -> InlineKeyboardMarkup:
+    """Confirmation keyboard before deleting a user record."""
+    return InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("⚠️ Sì, Elimina Definitivamente", callback_data=f"adm_u_del_ok:{chat_id}:{back_filter}:{back_page}"),
+        ],
+        [
+            InlineKeyboardButton("↩️ Annulla", callback_data=f"adm_u_view:{chat_id}:{back_filter}:{back_page}"),
         ],
     ])
 

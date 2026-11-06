@@ -415,4 +415,208 @@ async def test_ai_permission_flow_and_admin_commands():
         repo.delete_user(test_user_id)
 
 
+@pytest.mark.anyio
+async def test_admin_username_management_and_panel_flow():
+    """Verify admin can search/view user by username, toggle AI & notifications, delete record, and use admin panel."""
+    from fce_bot.data.users_repo import UsersRepository
+    from fce_bot.bot.handlers.admin import (
+        admin_command,
+        admin_callback,
+        user_command,
+        users_command,
+        allow_ai_command,
+        disallow_ai_command,
+        sub_user_command,
+        unsub_user_command,
+        delete_user_command,
+    )
+    from fce_bot.bot.handlers.start import start_command
+    from fce_bot.bot.handlers.ai_chat import ai_message_handler
+    from fce_bot.config import settings
+
+    repo = UsersRepository()
+    target_id = 666555444
+    target_username = "mario_fce_test"
+    admin_id = 111222333
+    repo.delete_user(target_id)
+
+    # Register target user with username
+    repo.register_or_update(chat_id=target_id, username=target_username, first_name="Mario", is_subscribed=False)
+
+    original_admins = settings.ADMIN_USER_IDS_RAW
+    try:
+        settings.ADMIN_USER_IDS_RAW = str(admin_id)
+
+        # 1. Verify /start shows 'Pannello Admin' button ONLY for admin
+        admin_start_upd = MagicMock(spec=Update)
+        admin_start_upd.callback_query = None
+        admin_chat = MagicMock()
+        admin_chat.type = "private"
+        admin_chat.id = admin_id
+        admin_start_upd.effective_chat = admin_chat
+        admin_usr = MagicMock()
+        admin_usr.id = admin_id
+        admin_usr.username = "admin_boss"
+        admin_usr.first_name = "Admin"
+        admin_start_upd.effective_user = admin_usr
+        admin_msg = MagicMock()
+        admin_msg.reply_text = AsyncMock()
+        admin_start_upd.effective_message = admin_msg
+        ctx = MagicMock()
+        ctx.user_data = {}
+        ctx.bot.send_message = AsyncMock()
+
+        await start_command(admin_start_upd, ctx)
+        admin_kb = admin_msg.reply_text.call_args.kwargs["reply_markup"]
+        admin_cb_data = [btn.callback_data for row in admin_kb.inline_keyboard for btn in row]
+        assert "adm_menu" in admin_cb_data
+
+        # Regular user should NOT see 'adm_menu'
+        user_start_upd = MagicMock(spec=Update)
+        user_start_upd.callback_query = None
+        u_chat = MagicMock()
+        u_chat.type = "private"
+        u_chat.id = target_id
+        user_start_upd.effective_chat = u_chat
+        u_usr = MagicMock()
+        u_usr.id = target_id
+        u_usr.username = target_username
+        u_usr.first_name = "Mario"
+        user_start_upd.effective_user = u_usr
+        u_msg = MagicMock()
+        u_msg.reply_text = AsyncMock()
+        user_start_upd.effective_message = u_msg
+        await start_command(user_start_upd, ctx)
+        u_kb = u_msg.reply_text.call_args.kwargs["reply_markup"]
+        u_cb_data = [btn.callback_data for row in u_kb.inline_keyboard for btn in row]
+        assert "adm_menu" not in u_cb_data
+
+        # 2. Admin looks up user by @username via /user @mario_fce_test
+        admin_msg.reply_text.reset_mock()
+        ctx.args = [f"@{target_username}"]
+        await user_command(admin_start_upd, ctx)
+        card_text = admin_msg.reply_text.call_args[0][0]
+        assert str(target_id) in card_text
+        assert f"@{target_username}" in card_text
+
+        # 3. Admin enables & disables AI by @username
+        admin_msg.reply_text.reset_mock()
+        ctx.args = [f"@{target_username}"]
+        await allow_ai_command(admin_start_upd, ctx)
+        assert repo.is_ai_allowed(target_id) is True
+
+        ctx.args = [target_username]  # without @ also works
+        await disallow_ai_command(admin_start_upd, ctx)
+        assert repo.is_ai_allowed(target_id) is False
+
+        # 4. Admin enables & disables notification subscription by @username
+        ctx.args = [f"@{target_username}"]
+        await sub_user_command(admin_start_upd, ctx)
+        assert repo.is_user_subscribed(target_id) is True
+
+        await unsub_user_command(admin_start_upd, ctx)
+        assert repo.is_user_subscribed(target_id) is False
+
+        # 5. Interactive Admin Panel callbacks (toggle AI, toggle sub, search prompt, delete user)
+        cb_update = MagicMock(spec=Update)
+        cb_query = MagicMock(spec=CallbackQuery)
+        cb_query.answer = AsyncMock()
+        cb_query.edit_message_text = AsyncMock()
+        cb_update.callback_query = cb_query
+        cb_update.effective_user = admin_usr
+        cb_update.effective_chat = admin_chat
+
+        # Open admin menu
+        cb_query.data = "adm_menu"
+        await admin_callback(cb_update, ctx)
+        assert "Pannello di Controllo Amministratore" in cb_query.edit_message_text.call_args[0][0]
+
+        # Open users list
+        cb_query.data = "adm_users:all:0"
+        await admin_callback(cb_update, ctx)
+        assert "Gestione Utenti" in cb_query.edit_message_text.call_args[0][0]
+
+        # Toggle AI ON via inline button
+        cb_query.data = f"adm_u_ai:{target_id}:1:all:0"
+        await admin_callback(cb_update, ctx)
+        assert repo.is_ai_allowed(target_id) is True
+
+        # Toggle Notifications ON via inline button
+        cb_query.data = f"adm_u_sub:{target_id}:1:all:0"
+        await admin_callback(cb_update, ctx)
+        assert repo.is_user_subscribed(target_id) is True
+
+        # Interactive search prompt -> admin sends username in chat
+        cb_query.data = "adm_search_prompt"
+        await admin_callback(cb_update, ctx)
+        assert ctx.user_data.get("admin_state") == "awaiting_user_search"
+
+        admin_msg.reply_text.reset_mock()
+        admin_msg.text = f"@{target_username}"
+        admin_start_upd.channel_post = None
+        await ai_message_handler(admin_start_upd, ctx)
+        assert ctx.user_data.get("admin_state") is None
+        assert "Scheda Utente FCE Bot" in admin_msg.reply_text.call_args[0][0]
+
+        # Interactive Broadcast prompt -> admin sends message in chat
+        cb_query.data = "adm_broadcast_prompt"
+        await admin_callback(cb_update, ctx)
+        assert ctx.user_data.get("admin_state") == "awaiting_broadcast"
+
+        admin_msg.reply_text.reset_mock()
+        admin_msg.text = "Comunicazione di test agli iscritti"
+        await ai_message_handler(admin_start_upd, ctx)
+        assert "Broadcast Inviato con Successo" in admin_msg.reply_text.call_args[0][0]
+
+        # Delete user record via inline button confirmation
+        cb_query.data = f"adm_u_del_ask:{target_id}:all:0"
+        await admin_callback(cb_update, ctx)
+        assert "Conferma Eliminazione Utente" in cb_query.edit_message_text.call_args[0][0]
+
+        cb_query.data = f"adm_u_del_ok:{target_id}:all:0"
+        await admin_callback(cb_update, ctx)
+        assert repo.get_user(target_id) is None
+
+        # Re-register and test /delete_user @username command
+        repo.register_or_update(chat_id=target_id, username=target_username, first_name="Mario")
+        assert repo.get_user(target_username) is not None
+        ctx.args = [f"@{target_username}"]
+        await delete_user_command(admin_start_upd, ctx)
+        assert repo.get_user(target_id) is None
+
+        # 6. Verify track_user_interaction saves any incoming private user with is_subscribed=0 and ai_allowed=0
+        from fce_bot.bot.bot_app import track_user_interaction
+        new_uid = 555444333
+        repo.delete_user(new_uid)
+        auto_upd = MagicMock(spec=Update)
+        auto_upd.channel_post = None
+        auto_chat = MagicMock()
+        auto_chat.type = "private"
+        auto_chat.id = new_uid
+        auto_upd.effective_chat = auto_chat
+        auto_user = MagicMock()
+        auto_user.id = new_uid
+        auto_user.username = "nuovo_utente_fce"
+        auto_user.first_name = "Luca"
+        auto_upd.effective_user = auto_user
+        auto_msg = MagicMock()
+        auto_msg.text = "/viaggio Catania Bronte"
+        auto_upd.effective_message = auto_msg
+
+        await track_user_interaction(auto_upd, ctx)
+        saved_u = repo.get_user("nuovo_utente_fce")
+        assert saved_u is not None
+        assert saved_u["chat_id"] == str(new_uid)
+        assert saved_u["username"] == "nuovo_utente_fce"
+        assert saved_u["first_name"] == "Luca"
+        assert saved_u["is_subscribed"] == 0
+        assert saved_u["ai_allowed"] == 0
+        repo.delete_user(new_uid)
+    finally:
+        settings.ADMIN_USER_IDS_RAW = original_admins
+        repo.delete_user(target_id)
+        repo.delete_user(admin_id)
+
+
+
 
