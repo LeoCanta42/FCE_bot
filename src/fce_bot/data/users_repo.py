@@ -3,6 +3,7 @@
 import logging
 from typing import List, Optional
 from datetime import datetime, timedelta, timezone
+from fce_bot.config import settings
 from fce_bot.data.db import get_db
 
 logger = logging.getLogger(__name__)
@@ -132,6 +133,61 @@ class UsersRepository:
             logger.warning("Error fetching subscribed users: %s", e)
             return []
 
+    def is_ai_allowed(self, chat_id: int | str) -> bool:
+        """Check if user has permission to use the AI assistant.
+        
+        Configured admins in settings.admin_user_ids are always authorized by default.
+        Other users require explicit authorization by an admin via /allow_ai.
+        """
+        try:
+            cid_int = int(chat_id)
+            if cid_int in settings.admin_user_ids:
+                return True
+        except (ValueError, TypeError):
+            pass
+
+        try:
+            with get_db(self.db_path) as conn:
+                cur = conn.cursor()
+                row = cur.execute(
+                    "SELECT ai_allowed FROM users WHERE chat_id = ?",
+                    (str(chat_id),)
+                ).fetchone()
+                return bool(row and row["ai_allowed"] == 1)
+        except Exception as e:
+            logger.warning("Error checking AI allowance for %s: %s", chat_id, e)
+            return False
+
+    def set_ai_allowed(self, chat_id: int | str, allowed: bool) -> bool:
+        """Enable or revoke AI usage permission for a chat ID."""
+        try:
+            with get_db(self.db_path) as conn:
+                cur = conn.cursor()
+                cur.execute("""
+                    INSERT INTO users (chat_id, ai_allowed, is_subscribed)
+                    VALUES (?, ?, 0)
+                    ON CONFLICT(chat_id) DO UPDATE SET
+                        ai_allowed = ?
+                """, (str(chat_id), 1 if allowed else 0, 1 if allowed else 0))
+                return True
+        except Exception as e:
+            logger.error("Error setting AI allowance for user %s: %s", chat_id, e)
+            return False
+
+    def get_ai_allowed_chat_ids(self) -> List[str]:
+        """Return list of chat IDs authorized to use AI."""
+        try:
+            with get_db(self.db_path) as conn:
+                cur = conn.cursor()
+                rows = cur.execute("""
+                    SELECT chat_id FROM users
+                    WHERE ai_allowed = 1
+                """).fetchall()
+                return [row["chat_id"] for row in rows]
+        except Exception as e:
+            logger.warning("Error fetching AI allowed users: %s", e)
+            return []
+
     def get_stats(self) -> dict:
         """Return user count statistics."""
         try:
@@ -139,16 +195,18 @@ class UsersRepository:
                 cur = conn.cursor()
                 total = cur.execute("SELECT count(*) as cnt FROM users").fetchone()["cnt"]
                 subscribed = cur.execute("SELECT count(*) as cnt FROM users WHERE is_subscribed = 1").fetchone()["cnt"]
+                ai_allowed = cur.execute("SELECT count(*) as cnt FROM users WHERE ai_allowed = 1").fetchone()["cnt"]
                 cutoff = (datetime.now(timezone.utc) - timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
                 active_30d = cur.execute("SELECT count(*) as cnt FROM users WHERE last_active >= ?", (cutoff,)).fetchone()["cnt"]
                 return {
                     "total_users": total,
                     "subscribed_users": subscribed,
+                    "ai_allowed_users": ai_allowed,
                     "active_last_30_days": active_30d
                 }
         except Exception as e:
             logger.warning("Error reading user stats: %s", e)
-            return {"total_users": 0, "subscribed_users": 0, "active_last_30_days": 0}
+            return {"total_users": 0, "subscribed_users": 0, "ai_allowed_users": 0, "active_last_30_days": 0}
 
     def prune_inactive(self, days: int = 60) -> int:
         """Clean up old users not seen in N days (Data retention limit)."""

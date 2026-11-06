@@ -34,7 +34,14 @@ from fce_bot.bot.handlers.news import (
 )
 from fce_bot.bot.handlers.documents import documents_command, documents_callback
 from fce_bot.bot.handlers.ai_chat import ai_message_handler, ai_help_callback
-from fce_bot.bot.handlers.admin import stats_command, sync_gtfs_command, broadcast_command
+from fce_bot.bot.handlers.admin import (
+    stats_command,
+    sync_gtfs_command,
+    broadcast_command,
+    allow_ai_command,
+    disallow_ai_command,
+    list_ai_command,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -97,6 +104,10 @@ def create_bot_application() -> Application:
     app.add_handler(CommandHandler("stats", stats_command, filters=private_chat))
     app.add_handler(CommandHandler("sync_gtfs", sync_gtfs_command, filters=private_chat))
     app.add_handler(CommandHandler("broadcast", broadcast_command, filters=private_chat))
+    app.add_handler(CommandHandler("allow_ai", allow_ai_command, filters=private_chat))
+    app.add_handler(CommandHandler("disallow_ai", disallow_ai_command, filters=private_chat))
+    app.add_handler(CommandHandler("revoke_ai", disallow_ai_command, filters=private_chat))
+    app.add_handler(CommandHandler("list_ai", list_ai_command, filters=private_chat))
 
     # Callback queries
     app.add_handler(CallbackQueryHandler(start_command, pattern="^menu_main$"))

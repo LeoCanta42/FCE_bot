@@ -327,3 +327,92 @@ async def test_channel_and_group_messages_are_strictly_ignored():
     channel_msg.reply_text.assert_not_called()
 
 
+@pytest.mark.anyio
+async def test_ai_permission_flow_and_admin_commands():
+    """Verify AI permission checking, unauthorized message blocking, and admin allow/disallow."""
+    from fce_bot.data.users_repo import UsersRepository
+    from fce_bot.bot.handlers.ai_chat import ai_message_handler
+    from fce_bot.bot.handlers.admin import allow_ai_command, disallow_ai_command, list_ai_command
+    from fce_bot.config import settings
+
+    repo = UsersRepository()
+    test_user_id = 777666555
+    repo.delete_user(test_user_id)
+
+    # Initially unauthorized
+    assert repo.is_ai_allowed(test_user_id) is False
+
+    # Unauthorized user sending question gets restricted notice and is not processed
+    update = MagicMock(spec=Update)
+    update.channel_post = None
+    chat = MagicMock()
+    chat.type = "private"
+    chat.id = test_user_id
+    update.effective_chat = chat
+    msg = MagicMock()
+    msg.text = "A che ora c'è la metro?"
+    msg.reply_text = AsyncMock()
+    update.effective_message = msg
+    context = MagicMock()
+    context.bot.send_chat_action = AsyncMock()
+
+    await ai_message_handler(update, context)
+    msg.reply_text.assert_awaited_once()
+    assert "ad accesso limitato" in msg.reply_text.call_args[0][0]
+    assert str(test_user_id) in msg.reply_text.call_args[0][0]
+
+    # Non-admin trying to allow AI is denied
+    admin_update = MagicMock(spec=Update)
+    admin_user = MagicMock()
+    admin_user.id = 999999999
+    admin_update.effective_user = admin_user
+    admin_msg = MagicMock()
+    admin_msg.reply_text = AsyncMock()
+    admin_update.effective_message = admin_msg
+    admin_context = MagicMock()
+    admin_context.args = [str(test_user_id)]
+
+    await allow_ai_command(admin_update, admin_context)
+    admin_msg.reply_text.assert_awaited_once_with("⛔ Comando riservato agli amministratori.")
+
+    # Mock admin in settings.admin_user_ids
+    original_admins = settings.ADMIN_USER_IDS_RAW
+    try:
+        settings.ADMIN_USER_IDS_RAW = str(admin_user.id)
+        assert admin_user.id in settings.admin_user_ids
+        # Admin is automatically allowed AI
+        assert repo.is_ai_allowed(admin_user.id) is True
+
+        # Admin executes /allow_ai <chat_id>
+        admin_msg.reply_text.reset_mock()
+        await allow_ai_command(admin_update, admin_context)
+        assert repo.is_ai_allowed(test_user_id) is True
+        assert str(test_user_id) in repo.get_ai_allowed_chat_ids()
+        assert "Accesso AI *abilitato*" in admin_msg.reply_text.call_args[0][0]
+
+        # Admin checks /list_ai
+        admin_msg.reply_text.reset_mock()
+        await list_ai_command(admin_update, admin_context)
+        assert str(test_user_id) in admin_msg.reply_text.call_args[0][0]
+
+        # Now test_user sends message again -> passes permission check and typing action is triggered
+        msg.reply_text.reset_mock()
+        with pytest.MonkeyPatch().context() as mp:
+            from fce_bot.core.models import AIQueryResponse
+            from fce_bot.services.ai_service import ai_service
+            mp.setattr(ai_service, "answer_query", lambda q: AIQueryResponse(answer="Ecco la risposta AI", itineraries_count=1))
+            await ai_message_handler(update, context)
+            context.bot.send_chat_action.assert_awaited_once_with(chat_id=test_user_id, action="typing")
+            assert "Ecco la risposta AI" in msg.reply_text.call_args[0][0]
+
+        # Admin executes /disallow_ai <chat_id>
+        admin_msg.reply_text.reset_mock()
+        await disallow_ai_command(admin_update, admin_context)
+        assert repo.is_ai_allowed(test_user_id) is False
+        assert "Accesso AI *revocato*" in admin_msg.reply_text.call_args[0][0]
+    finally:
+        settings.ADMIN_USER_IDS_RAW = original_admins
+        repo.delete_user(test_user_id)
+
+
+

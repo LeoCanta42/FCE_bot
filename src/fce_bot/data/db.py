@@ -106,9 +106,16 @@ def init_db(path: Path = None) -> None:
                 username TEXT,
                 first_name TEXT,
                 last_active TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                is_subscribed INTEGER DEFAULT 1
+                is_subscribed INTEGER DEFAULT 1,
+                ai_allowed INTEGER DEFAULT 0
             )
         """)
+
+        # Migration: ensure ai_allowed column exists on existing databases
+        try:
+            cursor.execute("ALTER TABLE users ADD COLUMN ai_allowed INTEGER DEFAULT 0")
+        except sqlite3.OperationalError:
+            pass
 
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS news_cache (

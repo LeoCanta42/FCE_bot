@@ -38,6 +38,23 @@ async def ai_message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
             first_name=user.first_name
         )
 
+    # Permission check: AI is restricted to admin and authorized users only
+    if not users_repo.is_ai_allowed(chat.id):
+        logger.info("Unauthorized AI access attempt from chat_id %s", chat.id)
+        restricted_msg = (
+            "🔒 *Assistente AI ad accesso limitato*\n\n"
+            "L'assistente conversazionale AI è attualmente riservato agli utenti abilitati dall'amministratore.\n\n"
+            f"🆔 Il tuo ID chat è: `{chat.id}`\n\n"
+            "Puoi comunicare questo ID all'amministratore per richiedere l'abilitazione (es. con `/allow_ai {chat.id}`).\n\n"
+            "Nel frattempo, puoi cercare tutte le corse e gli orari con il tasto *Cerca Linea / Orari* oppure usando i comandi /viaggio e /fermate."
+        ).format(chat=chat)
+        await message.reply_text(
+            restricted_msg,
+            parse_mode="Markdown",
+            reply_markup=main_menu_keyboard()
+        )
+        return
+
     # Let the user know the bot is thinking
     await context.bot.send_chat_action(chat_id=chat.id, action="typing")
 
@@ -62,6 +79,29 @@ async def ai_help_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     """Explain how to use the AI assistant."""
     query = update.callback_query
     await query.answer()
+
+    chat = update.effective_chat
+    chat_id = chat.id if chat else None
+
+    # If user is not authorized for AI, display restriction notice and instructions
+    if chat_id and not users_repo.is_ai_allowed(chat_id):
+        restricted_msg = (
+            "🔒 *Assistente AI ad accesso limitato*\n\n"
+            "L'assistente conversazionale AI è attualmente riservato agli utenti abilitati dall'amministratore.\n\n"
+            f"🆔 Il tuo ID chat è: `{chat_id}`\n\n"
+            "Puoi comunicare questo identificativo all'amministratore per richiedere l'abilitazione.\n\n"
+            "Puoi comunque cercare tutte le corse e gli orari con il tasto *Cerca Linea / Orari* oppure usando i comandi /viaggio e /fermate."
+        )
+        try:
+            await query.edit_message_text(
+                restricted_msg,
+                reply_markup=main_menu_keyboard(),
+                parse_mode="Markdown"
+            )
+        except Exception as e:
+            if "Message is not modified" not in str(e):
+                logger.debug("AI help restricted edit notice: %s", e)
+        return
 
     help_msg = (
         "🤖 *Assistente AI per la Mobilità FCE*\n\n"

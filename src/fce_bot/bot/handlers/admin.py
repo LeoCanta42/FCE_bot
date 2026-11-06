@@ -44,6 +44,7 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         "📊 *Statistiche Sistema FCE Bot*\n\n"
         f"👥 *Utenti Totali:* `{stats['total_users']}`\n"
         f"🔔 *Iscritti attivi:* `{stats['subscribed_users']}`\n"
+        f"🤖 *Utenti con accesso AI:* `{stats['ai_allowed_users']}`\n"
         f"⚡ *Attivi ultimi 30gg:* `{stats['active_last_30_days']}`\n\n"
         "🗄 *Database GTFS:*\n"
         f"• Fermate censite: `{stops_cnt}`\n"
@@ -111,3 +112,95 @@ async def broadcast_command(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         f"📤 Broadcast inviato:\n• Consegnati: `{sent}`\n• Falliti: `{failed}`",
         parse_mode="Markdown"
     )
+
+
+async def allow_ai_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Authorize a Telegram chat ID to use the AI trip assistant (Admin only)."""
+    user_id = update.effective_user.id
+    if not is_admin(user_id):
+        await update.effective_message.reply_text("⛔ Comando riservato agli amministratori.")
+        return
+
+    if not context.args:
+        await update.effective_message.reply_text(
+            "ℹ️ Inserisci il `chat_id` dell'utente da abilitare all'AI.\n"
+            "Esempio: `/allow_ai 123456789`",
+            parse_mode="Markdown"
+        )
+        return
+
+    target_chat_id = context.args[0].strip()
+    users_repo.set_ai_allowed(target_chat_id, True)
+
+    # Attempt to notify the user if possible
+    notified = False
+    try:
+        await context.bot.send_message(
+            chat_id=target_chat_id,
+            text=(
+                "🎉 *Accesso AI Abilitato!*\n\n"
+                "L'amministratore ha autorizzato il tuo account all'uso dell'Assistente AI FCE.\n"
+                "Da adesso puoi scrivergli liberamente in chat per chiedere orari, coincidenze e percorsi!"
+            ),
+            parse_mode="Markdown"
+        )
+        notified = True
+    except Exception as exc:
+        logger.debug("Could not notify user %s of AI activation: %s", target_chat_id, exc)
+
+    msg = f"✅ Accesso AI *abilitato* per la chat ID: `{target_chat_id}`"
+    if notified:
+        msg += "\n🔔 L'utente è stato notificato con successo in chat."
+    await update.effective_message.reply_text(msg, parse_mode="Markdown")
+
+
+async def disallow_ai_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Revoke AI trip assistant access for a Telegram chat ID (Admin only)."""
+    user_id = update.effective_user.id
+    if not is_admin(user_id):
+        await update.effective_message.reply_text("⛔ Comando riservato agli amministratori.")
+        return
+
+    if not context.args:
+        await update.effective_message.reply_text(
+            "ℹ️ Inserisci il `chat_id` dell'utente a cui revocare l'accesso AI.\n"
+            "Esempio: `/disallow_ai 123456789`",
+            parse_mode="Markdown"
+        )
+        return
+
+    target_chat_id = context.args[0].strip()
+    users_repo.set_ai_allowed(target_chat_id, False)
+
+    await update.effective_message.reply_text(
+        f"🚫 Accesso AI *revocato* per la chat ID: `{target_chat_id}`",
+        parse_mode="Markdown"
+    )
+
+
+async def list_ai_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """List all chat IDs authorized to use the AI assistant (Admin only)."""
+    user_id = update.effective_user.id
+    if not is_admin(user_id):
+        await update.effective_message.reply_text("⛔ Comando riservato agli amministratori.")
+        return
+
+    allowed_ids = users_repo.get_ai_allowed_chat_ids()
+    admin_ids = [str(aid) for aid in settings.admin_user_ids]
+
+    lines = ["🤖 *Utenti con Accesso AI Abilitato:*", ""]
+    if admin_ids:
+        lines.append("👑 *Amministratori (abilitati automaticamente):*")
+        for aid in admin_ids:
+            lines.append(f"• `{aid}`")
+        lines.append("")
+
+    lines.append(f"👥 *Utenti whitelisted:* `{len(allowed_ids)}`")
+    if allowed_ids:
+        for cid in allowed_ids:
+            lines.append(f"• `{cid}`")
+    else:
+        lines.append("_(Nessun utente esterno attualmente abilitato)_")
+
+    await update.effective_message.reply_text("\n".join(lines), parse_mode="Markdown")
+

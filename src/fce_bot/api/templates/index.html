@@ -771,29 +771,23 @@
             </div>
         </section>
 
-        <!-- AI Assistant Card -->
-        <section class="card">
+        <!-- AI Assistant Card (Available on Telegram for Whitelisted Users) -->
+        <section class="card" style="border-left: 4px solid var(--primary);">
             <div class="card-header">
                 <h2 class="card-title">🤖 Assistente di Viaggio AI</h2>
-                <p class="card-description">Fai una domanda in italiano: l'assistente cercherà tra gli orari ufficiali FCE e ti risponderà.</p>
+                <p class="card-description">
+                    L'assistente conversazionale intelligente è disponibile su Telegram (<strong>@fce_app_bot</strong>) per gli utenti abilitati dall'amministratore.
+                </p>
             </div>
 
-            <div class="ai-chips">
-                <span class="ai-chip" onclick="fillAIQuestion(this)">Come vado da Catania a Bronte alle 14:00?</span>
-                <span class="ai-chip" onclick="fillAIQuestion(this)">Metro da Monte Po a Stesicoro alle 09:00</span>
-                <span class="ai-chip" onclick="fillAIQuestion(this)">Treni da Randazzo a Paternò nel pomeriggio</span>
-                <span class="ai-chip" onclick="fillAIQuestion(this)">Dove posso comprare i biglietti FCE?</span>
+            <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; font-size: 0.92rem; color: var(--text); line-height: 1.5; margin-bottom: 16px;">
+                💡 Sul web puoi calcolare direttamente e gratuitamente tutti gli itinerari, le corse e le fermate tramite il modulo di ricerca in alto.<br>
+                Se desideri testare l'assistente conversazionale in linguaggio naturale, puoi contattare l'amministratore indicando il tuo chat ID Telegram.
             </div>
 
-            <div class="input-group" style="margin-bottom: 14px;">
-                <textarea id="aiQuestion" class="text-input" rows="3" placeholder="Scrivi qui la tua domanda (es. 'A che ora c'è il primo treno per Randazzo?')"></textarea>
-            </div>
-
-            <button type="button" class="btn-submit" style="background-color: #1e293b;" onclick="askAI()">
-                💬 Chiedi all'Assistente
-            </button>
-
-            <div id="aiResponseBox" class="ai-response"></div>
+            <a href="https://t.me/fce_app_bot" target="_blank" class="btn-submit" style="background-color: #0284c7; text-align: center; text-decoration: none; display: inline-flex; justify-content: center; align-items: center; gap: 8px;">
+                💬 Apri Assistente su Telegram (@fce_app_bot)
+            </a>
         </section>
 
         <!-- Two Columns: Official PDFs and Recent News -->
@@ -1073,32 +1067,9 @@
             }
         }
 
-        // Ask AI assistant
+        // Ask AI assistant (Disabled from Web)
         async function askAI() {
-            const input = document.getElementById('aiQuestion');
-            const question = (input.value || '').trim();
-            const box = document.getElementById('aiResponseBox');
-
-            if (!question) {
-                alert("Inserisci una domanda per l'assistente!");
-                return;
-            }
-
-            box.style.display = 'block';
-            box.innerText = 'Sto consultando gli orari e preparando la risposta...';
-
-            try {
-                const res = await fetch('/api/ai/ask', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ question: question })
-                });
-                if (!res.ok) throw new Error('Risposta non valida dal server');
-                const data = await res.json();
-                box.innerHTML = formatAssistantResponse(data.answer || 'Nessuna risposta disponibile.');
-            } catch (e) {
-                box.innerText = 'Errore durante la richiesta: ' + e.message;
-            }
+            alert("L'assistente conversazionale AI è disabilitato da web ed è disponibile solo su Telegram (@fce_app_bot) per gli utenti abilitati dall'amministratore.");
         }
 
         // Load station autocomplete list filtered by transport mode

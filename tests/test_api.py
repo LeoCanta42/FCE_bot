@@ -125,12 +125,10 @@ def test_api_documents():
 
 
 def test_api_ai_ask():
-    """Verify AI trip assistant API endpoint."""
+    """Verify AI trip assistant API endpoint is disabled from web (returns 403 Forbidden)."""
     resp = client.post("/api/ai/ask", json={"question": "Da Paterno a Randazzo alle 08:30"})
-    assert resp.status_code == 200
-    data = resp.json()
-    assert "answer" in data
-    assert data["itineraries_count"] > 0
+    assert resp.status_code == 403
+    assert "disabilitato" in resp.json()["detail"].lower()
 
 
 def test_gdpr_user_erasure_and_manual_opt_in():

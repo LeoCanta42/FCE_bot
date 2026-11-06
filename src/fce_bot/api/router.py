@@ -180,8 +180,11 @@ async def get_documents() -> DocumentsInfo:
 
 @router.post("/api/ai/ask")
 async def ai_trip_advisor(req: AIQueryRequest) -> AIQueryResponse:
-    """Natural Language Trip Planning Assistant API."""
-    return ai_service.answer_query(req.question)
+    """Natural Language Trip Planning Assistant API (Disabled from Web)."""
+    raise HTTPException(
+        status_code=403,
+        detail="L'accesso all'assistente AI da web è disabilitato. L'assistente è disponibile esclusivamente su Telegram (@fce_app_bot) per gli utenti autorizzati dall'amministratore."
+    )
 
 
 @router.get("/api/health")
