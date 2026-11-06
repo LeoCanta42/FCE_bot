@@ -1,0 +1,62 @@
+"""Telegram Application factory and handler configuration."""
+
+import logging
+from telegram.ext import (
+    Application,
+    ApplicationBuilder,
+    CommandHandler,
+    CallbackQueryHandler,
+    MessageHandler,
+    filters,
+)
+from fce_bot.config import settings
+from fce_bot.bot.handlers.start import start_command, help_command, chat_id_command
+from fce_bot.bot.handlers.timetable import (
+    viaggio_command,
+    fermate_command,
+    wizard_callback,
+)
+from fce_bot.bot.handlers.news import news_command, news_callback
+from fce_bot.bot.handlers.documents import documents_command, documents_callback
+from fce_bot.bot.handlers.ai_chat import ai_message_handler, ai_help_callback
+from fce_bot.bot.handlers.admin import stats_command, sync_gtfs_command, broadcast_command
+
+logger = logging.getLogger(__name__)
+
+
+def create_bot_application() -> Application:
+    """Instantiate and configure the python-telegram-bot Application."""
+    token = settings.TELEGRAM_BOT_TOKEN
+    if not token:
+        logger.warning("TELEGRAM_BOT_TOKEN is not set. Bot will run in unconfigured mode.")
+        token = "0000000000:DUMMY_TOKEN_FOR_INITIALIZATION"
+
+    builder = ApplicationBuilder().token(token)
+    app = builder.build()
+
+    # Commands
+    app.add_handler(CommandHandler("start", start_command))
+    app.add_handler(CommandHandler("help", help_command))
+    app.add_handler(CommandHandler("viaggio", viaggio_command))
+    app.add_handler(CommandHandler("fermate", fermate_command))
+    app.add_handler(CommandHandler("news", news_command))
+    app.add_handler(CommandHandler("documenti", documents_command))
+    app.add_handler(CommandHandler("chat_id", chat_id_command))
+
+    # Admin commands
+    app.add_handler(CommandHandler("stats", stats_command))
+    app.add_handler(CommandHandler("sync_gtfs", sync_gtfs_command))
+    app.add_handler(CommandHandler("broadcast", broadcast_command))
+
+    # Callback queries
+    app.add_handler(CallbackQueryHandler(start_command, pattern="^menu_main$"))
+    app.add_handler(CallbackQueryHandler(help_command, pattern="^help_info$"))
+    app.add_handler(CallbackQueryHandler(ai_help_callback, pattern="^ai_help$"))
+    app.add_handler(CallbackQueryHandler(news_callback, pattern="^news_latest$"))
+    app.add_handler(CallbackQueryHandler(documents_callback, pattern="^doc_"))
+    app.add_handler(CallbackQueryHandler(wizard_callback))
+
+    # Natural language AI chat fallback
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, ai_message_handler))
+
+    return app

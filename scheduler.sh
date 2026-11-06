@@ -1,28 +1,46 @@
-#!/bin/bash
-source ~/FCE_bot/.venv/bin/activate
-h=true
-startpy=$(head -n 1 ~/FCE_bot/pyvers.txt)
+#!/usr/bin/env bash
+# Runner for local bot and periodic news checks
 
-if [ $1 = 'check' ]; then
-    eval "$startpy ~/FCE_bot/autocheck.py"
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+if [ -d ".venv" ]; then
+    source .venv/bin/activate
 fi
 
-while true; do
-	if $h; then
-		kill $PID1
-		eval "$startpy ~/FCE_bot/mainbot.py &" #bot principale
-		PID1=$!
-		eval "$startpy ~/FCE_bot/bot_news_sender.py &" #bot notizie
-		PID2=$!
-		h=false #se e' gia partito non deve ripartire
-	fi
-	sleep 58 #<1 min in modo da beccare sempre
-	if [ "$(date '+%H:%M')" = "01:00" ]; then #all'1:00 effettuo check di nuovi orari	
-		kill $PID1
-		kill $PID2
-		eval "$startpy ~/FCE_bot/FCE_bot/bot_pause_messages.py &" #bot quando bot in pausa
-		PID1=$!
-		eval "$startpy ~/FCE_bot/autocheck.py"
-		h=true #faccio ripartire il bot
-	fi
-done
+ACTION="${1:-all}"
+
+case "$ACTION" in
+    bot)
+        echo "🚀 Starting FCE Telegram Bot (polling mode)..."
+        exec python main.py bot
+        ;;
+    web)
+        echo "🌐 Starting FCE Web & REST API..."
+        exec python main.py serve --host 0.0.0.0 --port 8000
+        ;;
+    news)
+        echo "📢 Starting News Checker Daemon..."
+        exec python main.py news-worker
+        ;;
+    sync)
+        echo "🔄 Synchronizing GTFS Timetables..."
+        exec python main.py sync-gtfs
+        ;;
+    all)
+        echo "🚀 Starting FCE Bot and News daemon..."
+        python main.py news-worker &
+        PID_NEWS=$!
+        python main.py bot &
+        PID_BOT=$!
+
+        trap "kill $PID_NEWS $PID_BOT 2>/dev/null || true" EXIT
+        wait
+        ;;
+    *)
+        echo "Usage: $0 {bot|web|news|sync|all}"
+        exit 1
+        ;;
+esac

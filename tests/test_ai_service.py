@@ -1,0 +1,35 @@
+"""Unit tests for AI trip planning assistant and entity extractor."""
+
+import pytest
+from fce_bot.core.models import TransportType
+from fce_bot.services.ai_service import ai_service
+
+
+def test_extract_entities_standard_format():
+    """Verify origin, destination, and time extraction."""
+    text = "Come posso andare da Paterno a Randazzo alle 14:30 in treno?"
+    origin, dest, time_val, ttype = ai_service.extract_entities(text)
+    assert origin.upper() == "PATERNO"
+    assert dest.upper() == "RANDAZZO"
+    assert time_val == "14:30"
+    assert ttype == TransportType.TRENO
+
+
+def test_extract_entities_metro():
+    """Verify metro query extraction."""
+    text = "C'è la metro da Monte Po a Borgo alle 9?"
+    origin, dest, time_val, ttype = ai_service.extract_entities(text)
+    assert "MONTE PO" in origin.upper()
+    assert "BORGO" in dest.upper()
+    assert time_val == "09:00"
+    assert ttype == TransportType.METRO
+
+
+def test_ai_answer_query():
+    """Verify answer generation with factual itineraries."""
+    text = "Da Paterno a Randazzo alle 08:30"
+    resp = ai_service.answer_query(text)
+    assert resp.origin is not None
+    assert resp.destination is not None
+    assert resp.itineraries_count > 0
+    assert "randazzo" in resp.answer.lower()

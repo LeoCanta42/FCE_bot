@@ -1,8 +1,34 @@
-*.out
-users.db
-*_test.py
-private/
-.vscode/
-.venv/
+# Python bytecode & cache
 __pycache__/
+*.py[cod]
+*$py.class
+*.out
+.pytest_cache/
+*.egg-info/
+src/*.egg-info/
+
+# Environments & sensitive files
+.env
+.env.local
+.venv/
+env/
+venv/
+private/
+module/private/
+
+# Databases & logs (except pre-seeded fce_lines.db)
+users.db
+bot.log
+log.txt*
+*.log
+.bot.pid
+
+# IDE & Editor settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Backups & test scripts
 old_backup/
+*_test.py

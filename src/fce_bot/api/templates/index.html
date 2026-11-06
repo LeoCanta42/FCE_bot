@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ferrovia Circumetnea & Metropolitana di Catania | Orari e Linee</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌋</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #9e1b1b;
+            --primary-dark: #7f1515;
+            --primary-light: #fee2e2;
+            --secondary: #1e293b;
+            --accent: #2563eb;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --radius-lg: 16px;
+            --radius-md: 10px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+            --shadow-md: 0 10px 25px -5px rgba(0,0,0,0.07), 0 8px 10px -6px rgba(0,0,0,0.05);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Top Navigation */
+        .navbar {
+            background: #ffffff;
+            border-bottom: 1px solid var(--border);
+            padding: 14px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        .nav-container {
+            max-width: 1080px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: var(--text-main);
+            font-weight: 700;
+            font-size: 1.15rem;
+        }
+        .brand-icon {
+            font-size: 1.6rem;
+        }
+        .brand-sub {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            display: block;
+        }
+        .btn-telegram {
+            background-color: #229ED9;
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 999px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: opacity 0.2s;
+        }
+        .btn-telegram:hover { opacity: 0.9; }
+
+        /* Hero Banner */
+        .hero {
+            background: linear-gradient(135deg, #881337 0%, #991b1b 50%, #b91c1c 100%);
+            color: white;
+            padding: 40px 20px 60px;
+            text-align: center;
+        }
+        .hero-title {
+            font-size: 2.1rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+            letter-spacing: -0.02em;
+        }
+        .hero-subtitle {
+            font-size: 1.05rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Main Container */
+        .main-container {
+            max-width: 1080px;
+            margin: -35px auto 40px;
+            padding: 0 16px;
+        }
+
+        /* Card Component */
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-md);
+            padding: 28px;
+            margin-bottom: 24px;
+        }
+        .card-header {
+            margin-bottom: 22px;
+        }
+        .card-title {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: var(--secondary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card-description {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* Transport Pills */
+        .transport-pills {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .pill-btn {
+            background: #f1f5f9;
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 999px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .pill-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        .transport-hint {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: -8px;
+            margin-bottom: 20px;
+            padding: 8px 12px;
+            background: #f8fafc;
+            border-left: 3px solid var(--primary);
+            border-radius: 6px;
+        }
+
+        /* Search Form Layout */
+        .route-row {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 12px;
+            align-items: flex-end;
+            margin-bottom: 18px;
+        }
+        @media (max-width: 768px) {
+            .route-row {
+                grid-template-columns: 1fr;
+            }
+            .swap-col {
+                text-align: center;
+                margin: -4px 0;
+            }
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .input-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .input-wrapper {
+            position: relative;
+        }
+        .text-input, .select-input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            font-size: 0.98rem;
+            font-family: inherit;
+            color: var(--text-main);
+            background: #ffffff;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+        }
+        .text-input:focus, .select-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(158, 27, 27, 0.12);
+        }
+
+        .btn-swap {
+            background: #f1f5f9;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.2s;
+        }
+        .btn-swap:hover {
+            background: #e2e8f0;
+            transform: rotate(180deg);
+        }
+
+        /* Time & Filter Row */
+        .time-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 22px;
+        }
+        @media (max-width: 600px) {
+            .time-row { grid-template-columns: 1fr; }
+        }
+
+        /* Submit Button */
+        .btn-submit {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            border-radius: var(--radius-md);
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+        .btn-submit:hover {
+            background: var(--primary-dark);
+        }
+
+        /* Results Display */
+        .results-box {
+            margin-top: 24px;
+            display: none;
+        }
+        .results-header {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--secondary);
+            margin-bottom: 14px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+        .itinerary-card {
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-left: 5px solid var(--primary);
+            border-radius: var(--radius-md);
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .itinerary-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        }
+        .itinerary-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .badge-mode {
+            font-size: 0.78rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+        .badge-duration {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+        .itinerary-timeline {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .stop-point {
+            flex: 1;
+        }
+        .stop-time {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+        .stop-name {
+            font-size: 0.92rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+        .timeline-arrow {
+            color: #94a3b8;
+            font-size: 1.4rem;
+        }
+        .transfer-note {
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px dashed var(--border);
+            font-size: 0.85rem;
+            color: #d97706;
+            font-weight: 600;
+        }
+
+        /* AI Assistant Section */
+        .ai-chips {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+        .ai-chip {
+            background: #f1f5f9;
+            border: 1px solid var(--border);
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            color: #334155;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .ai-chip:hover {
+            background: #e2e8f0;
+        }
+        .ai-response {
+            margin-top: 16px;
+            padding: 16px;
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            font-size: 0.95rem;
+            white-space: pre-wrap;
+            display: none;
+            line-height: 1.6;
+        }
+
+        /* Two columns grid for News and PDFs */
+        .two-cols {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .two-cols { grid-template-columns: 1fr; }
+        }
+
+        .doc-btn {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #ffffff;
+            border: 1px solid var(--border);
+            padding: 14px 18px;
+            border-radius: var(--radius-md);
+            text-decoration: none;
+            color: var(--text-main);
+            font-weight: 600;
+            margin-bottom: 10px;
+            transition: all 0.2s;
+        }
+        .doc-btn:hover {
+            border-color: var(--primary);
+            background: #fef2f2;
+            color: var(--primary);
+        }
+        .doc-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .doc-icon { font-size: 1.4rem; }
+        .doc-tag { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; }
+
+        .news-item {
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .news-item:last-child { border-bottom: none; }
+        .news-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--primary);
+            text-decoration: none;
+            display: block;
+            margin-bottom: 3px;
+        }
+        .news-title:hover { text-decoration: underline; }
+        .news-date {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--border);
+            background: #ffffff;
+            padding: 24px 20px;
+            text-align: center;
+            font-size: 0.88rem;
+            color: var(--text-muted);
+        }
+        .footer-links {
+            margin-top: 8px;
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+        }
+        .footer-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+        }
+        .footer-links a:hover { color: var(--primary); }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navbar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="brand">
+                <span class="brand-icon">🌋</span>
+                <div>
+                    Circumetnea Mobilità
+                    <span class="brand-sub">Ferrovia e Metro di Catania</span>
+                </div>
+            </a>
+            <a href="https://t.me" target="_blank" class="btn-telegram">
+                📱 Apri Bot Telegram
+            </a>
+        </div>
+    </nav>
+
+    <!-- Hero Header -->
+    <header class="hero">
+        <h1 class="hero-title">Orari e Percorsi Ufficiali</h1>
+        <p class="hero-subtitle">Consulta partenze, arrivi e coincidenze della Ferrovia Circumetnea, Metropolitana e Autolinee extraurbane.</p>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="main-container">
+
+        <!-- Timetable Planner Card -->
+        <section class="card">
+            <div class="card-header">
+                <h2 class="card-title">🔍 Calcola il tuo Viaggio</h2>
+                <p class="card-description">Scegli le stazioni di partenza e arrivo per visualizzare tutte le corse disponibili.</p>
+            </div>
+
+            <!-- Transport Selection Filter -->
+            <div class="transport-pills">
+                <button type="button" class="pill-btn active" data-mode="QUALSIASI" onclick="setTransportMode(this, 'QUALSIASI')">🚍 Tutti i Mezzi</button>
+                <button type="button" class="pill-btn" data-mode="TRENO" onclick="setTransportMode(this, 'TRENO')">🚆 Treni FCE</button>
+                <button type="button" class="pill-btn" data-mode="METRO" onclick="setTransportMode(this, 'METRO')">🚇 Metropolitana</button>
+                <button type="button" class="pill-btn" data-mode="BUS" onclick="setTransportMode(this, 'BUS')">🚌 Autolinee Bus</button>
+            </div>
+            <div id="transportHint" class="transport-hint">
+                🌐 Ricerca attiva su tutta la rete Circumetnea (Treni, Metro e Bus).
+            </div>
+
+            <!-- Route Inputs -->
+            <div class="route-row">
+                <div class="input-group">
+                    <label for="tripOrigin">📍 Stazione di Partenza</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="tripOrigin" class="text-input" list="stationsDatalist" placeholder="Es. Catania, Paternò, Milo..." value="PATERNO'">
+                    </div>
+                </div>
+
+                <div class="swap-col">
+                    <button type="button" class="btn-swap" onclick="swapStations()" title="Inverti partenza e arrivo">⇄</button>
+                </div>
+
+                <div class="input-group">
+                    <label for="tripDest">🏁 Stazione di Arrivo</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="tripDest" class="text-input" list="stationsDatalist" placeholder="Es. Randazzo, Borgo, Adrano..." value="RANDAZZO">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Time and Criteria Selectors -->
+            <div class="time-row">
+                <div class="input-group">
+                    <label for="filterType">⚙️ Criterio di Ricerca</label>
+                    <select id="filterType" class="select-input">
+                        <option value="near_partenza2" selected>⏱ Partenza dopo l'orario indicato</option>
+                        <option value="near_arrivo2">🏁 Arrivo entro l'orario indicato (arrivo desiderato)</option>
+                        <option value="near_partenza">🕒 Partenza nell'ora indicata</option>
+                        <option value="near_arrivo">⌛ Arrivo nell'ora indicata</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label for="tripTime">🕒 Orario</label>
+                    <input type="time" id="tripTime" class="text-input" value="08:30">
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="button" class="btn-submit" onclick="searchTrip()">
+                🔍 Cerca Soluzioni di Viaggio
+            </button>
+
+            <!-- Results Section -->
+            <div id="resultsBox" class="results-box">
+                <div id="resultsHeader" class="results-header"></div>
+                <div id="resultsList"></div>
+            </div>
+        </section>
+
+        <!-- AI Assistant Card -->
+        <section class="card">
+            <div class="card-header">
+                <h2 class="card-title">🤖 Assistente di Viaggio AI</h2>
+                <p class="card-description">Fai una domanda in italiano: l'assistente cercherà tra gli orari ufficiali FCE e ti risponderà.</p>
+            </div>
+
+            <div class="ai-chips">
+                <span class="ai-chip" onclick="fillAIQuestion(this)">Come vado da Catania a Bronte alle 14:00?</span>
+                <span class="ai-chip" onclick="fillAIQuestion(this)">Metro da Monte Po a Stesicoro alle 09:00</span>
+                <span class="ai-chip" onclick="fillAIQuestion(this)">Treni da Randazzo a Paternò nel pomeriggio</span>
+                <span class="ai-chip" onclick="fillAIQuestion(this)">Dove posso comprare i biglietti FCE?</span>
+            </div>
+
+            <div class="input-group" style="margin-bottom: 14px;">
+                <textarea id="aiQuestion" class="text-input" rows="3" placeholder="Scrivi qui la tua domanda (es. 'A che ora c'è il primo treno per Randazzo?')"></textarea>
+            </div>
+
+            <button type="button" class="btn-submit" style="background-color: #1e293b;" onclick="askAI()">
+                💬 Chiedi all'Assistente
+            </button>
+
+            <div id="aiResponseBox" class="ai-response"></div>
+        </section>
+
+        <!-- Two Columns: Official PDFs and Recent News -->
+        <div class="two-cols">
+            <!-- Official PDFs -->
+            <section class="card">
+                <div class="card-header">
+                    <h2 class="card-title">📄 Orari Ufficiali in PDF</h2>
+                    <p class="card-description">Scarica le tabelle orarie complete emesse da Ferrovia Circumetnea.</p>
+                </div>
+
+                <a href="__METRO_URL__" target="_blank" class="doc-btn">
+                    <div class="doc-meta">
+                        <span class="doc-icon">🚇</span>
+                        <div>
+                            <div>Orario Metropolitana di Catania</div>
+                            <span class="doc-tag">Tratta Monte Po - Fontana - Stesicoro</span>
+                        </div>
+                    </div>
+                    <span>⬇️</span>
+                </a>
+
+                <a href="__TRAIN_URL__" target="_blank" class="doc-btn">
+                    <div class="doc-meta">
+                        <span class="doc-icon">🚆</span>
+                        <div>
+                            <div>Orario Treni di Superficie</div>
+                            <span class="doc-tag">Tratta Catania - Paternò - Randazzo - Riposto</span>
+                        </div>
+                    </div>
+                    <span>⬇️</span>
+                </a>
+
+                <a href="__BUS_URL__" target="_blank" class="doc-btn">
+                    <div class="doc-meta">
+                        <span class="doc-icon">🚌</span>
+                        <div>
+                            <div>Orario Autolinee (Bus)</div>
+                            <span class="doc-tag">Linee extraurbane FCE</span>
+                        </div>
+                    </div>
+                    <span>⬇️</span>
+                </a>
+            </section>
+
+            <!-- News & Alerts -->
+            <section class="card">
+                <div class="card-header">
+                    <h2 class="card-title">📢 Avvisi & Notizie</h2>
+                    <p class="card-description">Comunicazioni ufficiali su scioperi, deviazioni e novità del servizio.</p>
+                </div>
+                <div id="newsContainer">
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">Caricamento avvisi ufficiali...</p>
+                </div>
+            </section>
+        </div>
+
+    </main>
+
+    <!-- Datalist for Station Autocomplete -->
+    <datalist id="stationsDatalist"></datalist>
+
+    <!-- Footer -->
+    <footer>
+        <div>Ferrovia Circumetnea (FCE) &bull; Dati ufficiali del Trasporto Pubblico Locale</div>
+        <div class="footer-links">
+            <a href="https://www.circumetnea.it" target="_blank">Sito Ufficiale Circumetnea</a>
+            <a href="https://eticketing.circumetnea.it" target="_blank">Acquisto Titoli Online</a>
+            <a href="https://www.circumetnea.it/contatti/" target="_blank">Assistenza Passeggeri</a>
+        </div>
+    </footer>
+
+    <!-- App Logic Script -->
+    <script>
+        let currentMode = 'QUALSIASI';
+
+        const TRANSPORT_HINTS = {
+            'QUALSIASI': '🌐 Ricerca attiva su tutta la rete Circumetnea (Treni, Metro e Bus).',
+            'TRENO': '🚆 <b>Treni di superficie:</b> tratta Catania Borgo ⇄ Paternò ⇄ Adrano ⇄ Randazzo ⇄ Riposto.',
+            'METRO': '🚇 <b>Metropolitana di Catania:</b> tratta urbana sotterranea Monte Po ⇄ Stesicoro (12 stazioni).',
+            'BUS': '🚌 <b>Autolinee FCE:</b> collegamenti extraurbani su gomma nell\'area etnea.'
+        };
+
+        // Set transport filter
+        function setTransportMode(btn, mode) {
+            document.querySelectorAll('.transport-pills .pill-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentMode = mode;
+
+            const hintEl = document.getElementById('transportHint');
+            if (hintEl && TRANSPORT_HINTS[mode]) {
+                hintEl.innerHTML = TRANSPORT_HINTS[mode];
+            }
+
+            const origInput = document.getElementById('tripOrigin');
+            const destInput = document.getElementById('tripDest');
+
+            if (mode === 'METRO') {
+                origInput.placeholder = 'Es. Monte Po, Fontana, Milo...';
+                destInput.placeholder = 'Es. Stesicoro, Borgo, Nesima...';
+                if (origInput.value === "PATERNO'" || origInput.value === 'CATANIA' || !origInput.value) {
+                    origInput.value = 'MONTE PO';
+                }
+                if (destInput.value === 'RANDAZZO' || destInput.value === 'ADRANO' || !destInput.value) {
+                    destInput.value = 'STESICORO';
+                }
+            } else if (mode === 'TRENO') {
+                origInput.placeholder = 'Es. Catania Borgo, Paternò, Randazzo...';
+                destInput.placeholder = 'Es. Randazzo, Adrano, Riposto...';
+                if (origInput.value === 'MONTE PO' || !origInput.value) {
+                    origInput.value = "PATERNO'";
+                }
+                if (destInput.value === 'STESICORO' || !destInput.value) {
+                    destInput.value = 'RANDAZZO';
+                }
+            } else if (mode === 'BUS') {
+                origInput.placeholder = 'Es. Catania, Misterbianco, Belpasso...';
+                destInput.placeholder = 'Es. Adrano, Biancavilla, Randazzo...';
+                if (origInput.value === 'MONTE PO' || !origInput.value) {
+                    origInput.value = 'CATANIA';
+                }
+                if (destInput.value === 'STESICORO' || !destInput.value) {
+                    destInput.value = 'ADRANO';
+                }
+            } else {
+                origInput.placeholder = 'Es. Catania, Paternò, Milo...';
+                destInput.placeholder = 'Es. Randazzo, Borgo, Adrano...';
+            }
+
+            // Reload datalist with only stations valid for this transport mode
+            loadStations(mode);
+
+            // If results were previously shown, immediately refresh them
+            const box = document.getElementById('resultsBox');
+            if (box && box.style.display === 'block') {
+                searchTrip();
+            }
+        }
+
+        // Swap Departure and Arrival stations
+        function swapStations() {
+            const orig = document.getElementById('tripOrigin');
+            const dest = document.getElementById('tripDest');
+            const temp = orig.value;
+            orig.value = dest.value;
+            dest.value = temp;
+        }
+
+        // Fill AI question chip
+        function fillAIQuestion(chip) {
+            const input = document.getElementById('aiQuestion');
+            input.value = chip.innerText;
+            askAI();
+        }
+
+        // Search Itineraries
+        async function searchTrip() {
+            const origin = (document.getElementById('tripOrigin').value || '').trim();
+            const dest = (document.getElementById('tripDest').value || '').trim();
+            const time = (document.getElementById('tripTime').value || '08:00').trim();
+            const filter = document.getElementById('filterType').value;
+            const box = document.getElementById('resultsBox');
+            const header = document.getElementById('resultsHeader');
+            const list = document.getElementById('resultsList');
+
+            if (!origin || !dest) {
+                alert('Inserisci sia la stazione di partenza che quella di arrivo.');
+                return;
+            }
+
+            box.style.display = 'block';
+            header.innerText = 'Ricerca delle soluzioni di viaggio in corso...';
+            list.innerHTML = '';
+
+            try {
+                const url = '/api/timetable?origin=' + encodeURIComponent(origin) + 
+                            '&destination=' + encodeURIComponent(dest) + 
+                            '&time=' + encodeURIComponent(time) + 
+                            '&transport=' + encodeURIComponent(currentMode) + 
+                            '&filter=' + encodeURIComponent(filter);
+
+                const res = await fetch(url);
+                if (!res.ok) throw new Error('Errore durante la ricerca');
+                const data = await res.json();
+
+                if (!data.itineraries || data.itineraries.length === 0) {
+                    const modeDesc = currentMode === 'METRO' ? ' per la Metropolitana' : 
+                                    (currentMode === 'TRENO' ? ' per i Treni FCE' : 
+                                    (currentMode === 'BUS' ? ' per le Autolinee Bus' : ''));
+                    header.innerText = 'Nessuna corsa trovata per ' + origin + ' ➔ ' + dest + modeDesc;
+                    list.innerHTML = '<p style="color:var(--text-muted); font-size:0.92rem; padding:10px 0;">' +
+                        'Non risultano corse attive per l\\\'orario o la modalità di trasporto selezionata.<br>' +
+                        (currentMode !== 'QUALSIASI' ? '💡 <i>Verifica che entrambe le fermate siano servite da questa linea, oppure seleziona <b>"Tutti i Mezzi"</b> per una ricerca combinata.</i>' : 'Prova a modificare l\\\'orario di riferimento o verificare i nomi delle fermate.') + '</p>';
+                    return;
+                }
+
+                header.innerText = '✅ Trovate ' + data.count + ' soluzioni per ' + origin + ' ➔ ' + dest + ':';
+
+                let html = '';
+                data.itineraries.forEach((it, idx) => {
+                    const firstSeg = it.segments[0] || {};
+                    const isDirect = it.direct;
+                    const modeLabel = firstSeg.type === 'TRENO' ? '🚆 Treno FCE' : (firstSeg.type === 'METRO' ? '🚇 Metropolitana' : '🚌 Bus Autolinee');
+                    const headsign = firstSeg.headsign ? 'Direzione: ' + firstSeg.headsign : '';
+
+                    html += '<div class="itinerary-card">';
+                    html += '  <div class="itinerary-top">';
+                    html += '    <span class="badge-mode">' + modeLabel + '</span>';
+                    html += '    <span class="badge-duration">⏱ Durata stimata: ' + it.duration_minutes + ' min</span>';
+                    html += '  </div>';
+
+                    html += '  <div class="itinerary-timeline">';
+                    html += '    <div class="stop-point">';
+                    html += '      <div class="stop-time">' + it.departure_time + '</div>';
+                    html += '      <div class="stop-name">' + it.departure_stop + '</div>';
+                    html += '    </div>';
+                    html += '    <div class="timeline-arrow">➔</div>';
+                    html += '    <div class="stop-point" style="text-align: right;">';
+                    html += '      <div class="stop-time">' + it.arrival_time + '</div>';
+                    html += '      <div class="stop-name">' + it.arrival_stop + '</div>';
+                    html += '    </div>';
+                    html += '  </div>';
+
+                    if (!isDirect && it.segments.length > 1) {
+                        html += '  <div class="transfer-note">🔀 Soluzione con cambio alla stazione di ' + it.segments[0].arrival_stop + '</div>';
+                    } else if (headsign) {
+                        html += '  <div style="font-size:0.8rem; color:var(--text-muted); margin-top:6px;">' + headsign + '</div>';
+                    }
+
+                    html += '</div>';
+                });
+
+                list.innerHTML = html;
+            } catch (e) {
+                header.innerText = 'Errore di connessione';
+                list.innerHTML = '<p style="color:#b91c1c;">Impossibile recuperare gli orari: ' + e.message + '</p>';
+            }
+        }
+
+        // Ask AI assistant
+        async function askAI() {
+            const input = document.getElementById('aiQuestion');
+            const question = (input.value || '').trim();
+            const box = document.getElementById('aiResponseBox');
+
+            if (!question) {
+                alert('Inserisci una domanda per l\\\'assistente!');
+                return;
+            }
+
+            box.style.display = 'block';
+            box.innerText = 'Sto consultando gli orari e preparando la risposta...';
+
+            try {
+                const res = await fetch('/api/ai/ask', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question: question })
+                });
+                if (!res.ok) throw new Error('Risposta non valida dal server');
+                const data = await res.json();
+                box.innerText = data.answer || 'Nessuna risposta disponibile.';
+            } catch (e) {
+                box.innerText = 'Errore durante la richiesta: ' + e.message;
+            }
+        }
+
+        // Load station autocomplete list filtered by transport mode
+        async function loadStations(mode = currentMode) {
+            try {
+                const queryParam = (mode && mode !== 'QUALSIASI') ? '?type=' + encodeURIComponent(mode) + '&limit=600' : '?limit=600';
+                const res = await fetch('/api/stops' + queryParam);
+                if (!res.ok) return;
+                const stops = await res.json();
+                const datalist = document.getElementById('stationsDatalist');
+                const uniqueNames = new Set();
+                stops.forEach(s => uniqueNames.add(s.name));
+
+                let optionsHtml = '';
+                Array.from(uniqueNames).sort().forEach(name => {
+                    optionsHtml += '<option value="' + name + '"></option>';
+                });
+                datalist.innerHTML = optionsHtml;
+            } catch (e) {
+                console.warn('Could not populate station datalist:', e);
+            }
+        }
+
+        // Load news and announcements
+        async function loadNews() {
+            const box = document.getElementById('newsContainer');
+            try {
+                const res = await fetch('/api/news?limit=4');
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const news = await res.json();
+
+                if (!news || news.length === 0) {
+                    box.innerHTML = '<p style="color:var(--text-muted); font-size:0.9rem;">Nessun avviso recente al momento.</p>';
+                    return;
+                }
+
+                let html = '';
+                news.forEach(item => {
+                    const title = item.title || 'Avviso FCE';
+                    const link = item.link || '#';
+                    const date = item.published_date || '';
+                    html += '<div class="news-item">';
+                    html += '  <a href="' + link + '" target="_blank" class="news-title">' + title + '</a>';
+                    if (date) {
+                        html += '  <div class="news-date">📅 ' + date + '</div>';
+                    }
+                    html += '</div>';
+                });
+                box.innerHTML = html;
+            } catch (e) {
+                box.innerHTML = '<p style="color:#b91c1c; font-size:0.88rem;">Impossibile recuperare gli avvisi: ' + e.message + '</p>';
+            }
+        }
+
+        // Init on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadStations();
+            loadNews();
+        });
+    </script>
+</body>
+</html>

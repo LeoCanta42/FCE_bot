@@ -1,14 +1,22 @@
-#!/bin/bash
-startpy=$(head -n 1 ~/FCE_bot/pyvers.txt)
+#!/usr/bin/env bash
+# Reset script to rebuild local database and test environment
 
-rm ~/FCE_bot/users.db
-rm ~/FCE_bot/module/news_check/updated_news.html
-echo "" > ~/FCE_bot/module/urls1.txt
-echo "" > ~/FCE_bot/module/urls2.txt
-echo "" > ~/FCE_bot/module/news_check/updated_news.html
-rm -r ~/FCE_bot/module/timetables_operations/bus
-rm -r ~/FCE_bot/module/timetables_operations/littorina
-mkdir ~/FCE_bot/module/timetables_operations/bus
-mkdir ~/FCE_bot/module/timetables_operations/littorina
-eval "$startpy ~/FCE_bot/create_users_db.py"
-eval "$startpy ~/FCE_bot/autocheck.py"
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+echo "🔄 Resetting FCE Bot database and caches..."
+
+# Remove old databases if needed
+rm -f fce_lines.db users.db
+
+# Ensure virtualenv is active if it exists
+if [ -d ".venv" ]; then
+    source .venv/bin/activate
+fi
+
+# Run GTFS sync to rebuild database from official Circumetnea open data
+python main.py sync-gtfs
+
+echo "✅ Database and cache reset complete! You can now start the bot with: python main.py bot"

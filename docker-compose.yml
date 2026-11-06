@@ -1,0 +1,22 @@
+services:
+  bot:
+    build: .
+    container_name: fce_telegram_bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    command: ["python", "main.py", "bot"]
+    volumes:
+      - ./data:/app/data
+
+  web:
+    build: .
+    container_name: fce_web_api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    command: ["python", "main.py", "serve", "--host", "0.0.0.0", "--port", "8000"]
+    volumes:
+      - ./data:/app/data
