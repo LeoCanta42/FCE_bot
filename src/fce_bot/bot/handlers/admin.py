@@ -13,10 +13,14 @@ users_repo = UsersRepository()
 
 
 def is_admin(user_id: int) -> bool:
-    """Check if given Telegram user is configured as an admin."""
-    # If no admins configured, allow local developer to run admin commands
+    """Check if given Telegram user is configured as an admin.
+    
+    Secure by default: if no admins are explicitly configured in ADMIN_USER_IDS,
+    access to privileged administrative commands is denied.
+    """
     if not settings.admin_user_ids:
-        return True
+        logger.warning("Admin command attempted but no ADMIN_USER_IDS configured. Denying access for user %s", user_id)
+        return False
     return user_id in settings.admin_user_ids
 
 

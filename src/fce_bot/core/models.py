@@ -182,6 +182,29 @@ class Itinerary:
             lines.append(f"⏱ *Durata totale stimata:* ~{self.duration_minutes} min\n")
             return "".join(lines)
 
+    def format_clean(self) -> str:
+        """Render itinerary as clean plain text without Markdown asterisks or brackets."""
+        icon_map = {
+            TransportType.BUS: "🚌",
+            TransportType.TRENO: "🚆",
+            TransportType.METRO: "🚇",
+            TransportType.QUALSIASI: "🚍"
+        }
+        if self.is_direct:
+            seg = self.segments[0]
+            icon = icon_map.get(seg.transport_type, "🚍")
+            headsign_part = f" (Direzione {seg.headsign})" if seg.headsign else ""
+            return (
+                f"{icon} {seg.transport_type.value}: partenza ore {seg.departure_time} da {seg.departure_stop}, "
+                f"arrivo ore {seg.arrival_time} a {seg.arrival_stop} (~{self.duration_minutes} min){headsign_part}"
+            )
+        else:
+            parts = []
+            for seg in self.segments:
+                icon = icon_map.get(seg.transport_type, "🚍")
+                parts.append(f"{icon} {seg.transport_type.value} ({seg.departure_stop} ore {seg.departure_time} -> {seg.arrival_stop} ore {seg.arrival_time})")
+            return f"🔀 Cambio: {' con '.join(parts)} (durata complessiva ~{self.duration_minutes} min)"
+
 
 class NewsItem(BaseModel):
     title: str

@@ -105,3 +105,30 @@ def test_api_ai_ask():
     data = resp.json()
     assert "answer" in data
     assert data["itineraries_count"] > 0
+
+
+def test_gdpr_user_erasure():
+    """Verify GDPR right to erasure (Art. 17) in UsersRepository."""
+    from fce_bot.data.users_repo import UsersRepository
+    repo = UsersRepository()
+    test_chat_id = 999888777
+
+    # Register user
+    repo.register_or_update(chat_id=test_chat_id)
+    subscribed = repo.get_subscribed_chat_ids()
+    assert str(test_chat_id) in subscribed
+
+    # Erase user
+    deleted = repo.delete_user(test_chat_id)
+    assert deleted is True
+
+    # Ensure user is completely gone
+    subscribed_after = repo.get_subscribed_chat_ids()
+    assert str(test_chat_id) not in subscribed_after
+
+
+def test_admin_security_by_default():
+    """Verify that unconfigured admin list securely rejects unauthorized users."""
+    from fce_bot.bot.handlers.admin import is_admin
+    # When admin_user_ids is empty, any random ID must be rejected
+    assert is_admin(123456789) is False

@@ -42,16 +42,21 @@ _"C'è un treno da Randazzo alle 12:30?"_
 Il bot memorizza esclusivamente il chat_id e la data di ultimo accesso per permetterti di ricevere eventuali avvisi di servizio. I dati inattivi da oltre 60 giorni vengono eliminati automaticamente."""
 
 
+PRIVACY_TEXT = """🔒 *Informativa sulla Privacy & GDPR (Regolamento UE 2016/679)*
+
+• *Finalità del servizio:* Questo bot fornisce informazioni su orari, linee e avvisi di servizio della Ferrovia Circumetnea e Metropolitana di Catania.
+• *Dati trattati (Minimizzazione Art. 5):* Viene memorizzato unicamente il tuo ID tecnico di chat Telegram (`chat_id`), necessario esclusivamente per recapitare gli avvisi ufficiali di servizio (scioperi, modifiche orari, deviazioni).
+• *Nessun tracciamento o profilazione:* Non raccogliamo dati personali, non utilizziamo strumenti di profilazione e nessun dato viene ceduto a terzi.
+• *Periodo di conservazione:* I dati di utilizzo inattivi da oltre 60 giorni vengono eliminati automaticamente dal database.
+• *Diritto alla cancellazione (Art. 17 - Oblio):* Puoi richiedere la cancellazione immediata e totale di qualsiasi informazione associata al tuo account inviando il comando /cancella."""
+
+
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /start command."""
-    user = update.effective_user
     chat = update.effective_chat
-    if user and chat:
-        users_repo.register_or_update(
-            chat_id=chat.id,
-            username=user.username,
-            first_name=user.first_name
-        )
+    if chat:
+        # GDPR data minimization: store only technical chat_id
+        users_repo.register_or_update(chat_id=chat.id)
 
     # Clear wizard session state
     context.user_data.clear()
@@ -68,6 +73,29 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     await update.effective_message.reply_text(
         HELP_TEXT,
         reply_markup=main_menu_keyboard(),
+        parse_mode="Markdown"
+    )
+
+
+async def privacy_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Display GDPR privacy policy (/privacy)."""
+    await update.effective_message.reply_text(
+        PRIVACY_TEXT,
+        parse_mode="Markdown"
+    )
+
+
+async def cancella_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Execute GDPR Art. 17 Right to Erasure (/cancella or /stop)."""
+    chat = update.effective_chat
+    if chat:
+        users_repo.delete_user(chat.id)
+    context.user_data.clear()
+    await update.effective_message.reply_text(
+        "🗑️ *Dati eliminati con successo (GDPR Art. 17)*\n\n"
+        "Il tuo identificativo e l'iscrizione alle notifiche sono stati rimossi definitivamente dal database.\n"
+        "Non riceverai più alcun avviso di servizio.\n\n"
+        "Se in futuro vorrai tornare a utilizzare il bot, potrai semplicemente inviare nuovamente il comando /start.",
         parse_mode="Markdown"
     )
 

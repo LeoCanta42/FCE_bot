@@ -641,6 +641,9 @@
     <!-- Footer -->
     <footer>
         <div>Ferrovia Circumetnea (FCE) &bull; Dati ufficiali del Trasporto Pubblico Locale</div>
+        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 6px;">
+            🔒 <b>Privacy & Trasparenza (GDPR):</b> Questo portale web non utilizza cookie di profilazione o tracciamento e non memorizza dati personali.
+        </div>
         <div class="footer-links">
             <a href="https://www.circumetnea.it" target="_blank">Sito Ufficiale Circumetnea</a>
             <a href="https://eticketing.circumetnea.it" target="_blank">Acquisto Titoli Online</a>
@@ -656,8 +659,44 @@
             'QUALSIASI': '🌐 Ricerca attiva su tutta la rete Circumetnea (Treni, Metro e Bus).',
             'TRENO': '🚆 <b>Treni di superficie:</b> tratta Catania Borgo ⇄ Paternò ⇄ Adrano ⇄ Randazzo ⇄ Riposto.',
             'METRO': '🚇 <b>Metropolitana di Catania:</b> tratta urbana sotterranea Monte Po ⇄ Stesicoro (12 stazioni).',
-            'BUS': '🚌 <b>Autolinee FCE:</b> collegamenti extraurbani su gomma nell\'area etnea.'
+            'BUS': "🚌 <b>Autolinee FCE:</b> collegamenti extraurbani su gomma nell'area etnea."
         };
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // Format assistant answer cleanly without raw markdown artifacts
+        function formatAssistantResponse(text) {
+            if (!text) return '';
+            // 1. Remove markdown links [Label](url) -> just Label
+            let clean = text.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+            // 2. Format bold tags and clean stray asterisks or underscores
+            clean = clean.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+            clean = clean.replace(/(^|[^\*])\*([^\*]+)\*([^\*]|$)/g, '$1$2$3');
+            clean = clean.replace(/_([^_]+)_/g, '$1');
+            // 3. Remove backslash escapes
+            clean = clean.replace(/\\(['"])/g, '$1');
+            // 4. Split into clean paragraphs and styled bullet items
+            const lines = clean.split('\n');
+            let html = '';
+            lines.forEach(line => {
+                const trimmed = line.trim();
+                if (!trimmed) {
+                    html += '<div style="height: 6px;"></div>';
+                } else if (trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.startsWith('*')) {
+                    const itemText = trimmed.replace(/^[•\-\*]\s*/, '');
+                    html += '<div style="margin: 4px 0 4px 12px; display: flex; align-items: flex-start; gap: 6px;"><span>&bull;</span><span>' + itemText + '</span></div>';
+                } else {
+                    html += '<p style="margin: 4px 0;">' + trimmed + '</p>';
+                }
+            });
+            return html;
+        }
 
         // Set transport filter
         function setTransportMode(btn, mode) {
@@ -742,7 +781,7 @@
             const list = document.getElementById('resultsList');
 
             if (!origin || !dest) {
-                alert('Inserisci sia la stazione di partenza che quella di arrivo.');
+                alert("Inserisci sia la stazione di partenza che quella di arrivo.");
                 return;
             }
 
@@ -767,8 +806,8 @@
                                     (currentMode === 'BUS' ? ' per le Autolinee Bus' : ''));
                     header.innerText = 'Nessuna corsa trovata per ' + origin + ' ➔ ' + dest + modeDesc;
                     list.innerHTML = '<p style="color:var(--text-muted); font-size:0.92rem; padding:10px 0;">' +
-                        'Non risultano corse attive per l\\\'orario o la modalità di trasporto selezionata.<br>' +
-                        (currentMode !== 'QUALSIASI' ? '💡 <i>Verifica che entrambe le fermate siano servite da questa linea, oppure seleziona <b>"Tutti i Mezzi"</b> per una ricerca combinata.</i>' : 'Prova a modificare l\\\'orario di riferimento o verificare i nomi delle fermate.') + '</p>';
+                        "Non risultano corse attive per l'orario o la modalità di trasporto selezionata.<br>" +
+                        (currentMode !== 'QUALSIASI' ? '💡 <i>Verifica che entrambe le fermate siano servite da questa linea, oppure seleziona <b>"Tutti i Mezzi"</b> per una ricerca combinata.</i>' : "Prova a modificare l'orario di riferimento o verificare i nomi delle fermate.") + '</p>';
                     return;
                 }
 
@@ -779,7 +818,7 @@
                     const firstSeg = it.segments[0] || {};
                     const isDirect = it.direct;
                     const modeLabel = firstSeg.type === 'TRENO' ? '🚆 Treno FCE' : (firstSeg.type === 'METRO' ? '🚇 Metropolitana' : '🚌 Bus Autolinee');
-                    const headsign = firstSeg.headsign ? 'Direzione: ' + firstSeg.headsign : '';
+                    const headsign = firstSeg.headsign ? 'Direzione: ' + escapeHtml(firstSeg.headsign) : '';
 
                     html += '<div class="itinerary-card">';
                     html += '  <div class="itinerary-top">';
@@ -789,18 +828,18 @@
 
                     html += '  <div class="itinerary-timeline">';
                     html += '    <div class="stop-point">';
-                    html += '      <div class="stop-time">' + it.departure_time + '</div>';
-                    html += '      <div class="stop-name">' + it.departure_stop + '</div>';
+                    html += '      <div class="stop-time">' + escapeHtml(it.departure_time) + '</div>';
+                    html += '      <div class="stop-name">' + escapeHtml(it.departure_stop) + '</div>';
                     html += '    </div>';
                     html += '    <div class="timeline-arrow">➔</div>';
                     html += '    <div class="stop-point" style="text-align: right;">';
-                    html += '      <div class="stop-time">' + it.arrival_time + '</div>';
-                    html += '      <div class="stop-name">' + it.arrival_stop + '</div>';
+                    html += '      <div class="stop-time">' + escapeHtml(it.arrival_time) + '</div>';
+                    html += '      <div class="stop-name">' + escapeHtml(it.arrival_stop) + '</div>';
                     html += '    </div>';
                     html += '  </div>';
 
                     if (!isDirect && it.segments.length > 1) {
-                        html += '  <div class="transfer-note">🔀 Soluzione con cambio alla stazione di ' + it.segments[0].arrival_stop + '</div>';
+                        html += '  <div class="transfer-note">🔀 Soluzione con cambio alla stazione di ' + escapeHtml(it.segments[0].arrival_stop) + '</div>';
                     } else if (headsign) {
                         html += '  <div style="font-size:0.8rem; color:var(--text-muted); margin-top:6px;">' + headsign + '</div>';
                     }
@@ -811,7 +850,7 @@
                 list.innerHTML = html;
             } catch (e) {
                 header.innerText = 'Errore di connessione';
-                list.innerHTML = '<p style="color:#b91c1c;">Impossibile recuperare gli orari: ' + e.message + '</p>';
+                list.innerHTML = '<p style="color:#b91c1c;">Impossibile recuperare gli orari: ' + escapeHtml(e.message) + '</p>';
             }
         }
 
@@ -822,7 +861,7 @@
             const box = document.getElementById('aiResponseBox');
 
             if (!question) {
-                alert('Inserisci una domanda per l\\\'assistente!');
+                alert("Inserisci una domanda per l'assistente!");
                 return;
             }
 
@@ -837,7 +876,7 @@
                 });
                 if (!res.ok) throw new Error('Risposta non valida dal server');
                 const data = await res.json();
-                box.innerText = data.answer || 'Nessuna risposta disponibile.';
+                box.innerHTML = formatAssistantResponse(data.answer || 'Nessuna risposta disponibile.');
             } catch (e) {
                 box.innerText = 'Errore durante la richiesta: ' + e.message;
             }
@@ -856,7 +895,7 @@
 
                 let optionsHtml = '';
                 Array.from(uniqueNames).sort().forEach(name => {
-                    optionsHtml += '<option value="' + name + '"></option>';
+                    optionsHtml += '<option value="' + escapeHtml(name) + '"></option>';
                 });
                 datalist.innerHTML = optionsHtml;
             } catch (e) {
@@ -879,11 +918,11 @@
 
                 let html = '';
                 news.forEach(item => {
-                    const title = item.title || 'Avviso FCE';
-                    const link = item.link || '#';
-                    const date = item.published_date || '';
+                    const title = escapeHtml(item.title || 'Avviso FCE');
+                    const link = (item.link && (item.link.startsWith('http://') || item.link.startsWith('https://'))) ? item.link : '#';
+                    const date = escapeHtml(item.published_date || '');
                     html += '<div class="news-item">';
-                    html += '  <a href="' + link + '" target="_blank" class="news-title">' + title + '</a>';
+                    html += '  <a href="' + link + '" target="_blank" rel="noopener noreferrer" class="news-title">' + title + '</a>';
                     if (date) {
                         html += '  <div class="news-date">📅 ' + date + '</div>';
                     }
@@ -891,7 +930,7 @@
                 });
                 box.innerHTML = html;
             } catch (e) {
-                box.innerHTML = '<p style="color:#b91c1c; font-size:0.88rem;">Impossibile recuperare gli avvisi: ' + e.message + '</p>';
+                box.innerHTML = '<p style="color:#b91c1c; font-size:0.88rem;">Impossibile recuperare gli avvisi: ' + escapeHtml(e.message) + '</p>';
             }
         }
 

@@ -79,7 +79,7 @@ Assicurati di avere Python 3.10 o successivo installato.
 
 ```bash
 # Clona il repository
-git clone https://github.com/Leonardo0101/FCE_bot.git
+git clone https://github.com/LeoCanta42/FCE_bot.git
 cd FCE_bot
 
 # Crea ed attiva l'ambiente virtuale

@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "GPL-3.0"}
 authors = [
-    {name = "Leonardo", email = "leo@example.com"}
+    {name = "Leonardo", email = "leonardo@cantarella.com"}
 ]
 dependencies = [
     "python-telegram-bot>=20.0",

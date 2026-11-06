@@ -57,7 +57,7 @@ async def telegram_webhook(
         return {"ok": True}
     except Exception as e:
         logger.error("Error processing telegram webhook: %s", e)
-        return JSONResponse(status_code=500, content={"ok": False, "error": str(e)})
+        return JSONResponse(status_code=500, content={"ok": False, "error": "Internal processing error"})
 
 
 @router.get("/api/cron/news")
@@ -187,13 +187,10 @@ async def ai_trip_advisor(req: AIQueryRequest) -> AIQueryResponse:
 @router.get("/api/health")
 async def health_check():
     """Health check endpoint."""
-    users_repo = UsersRepository()
-    stats = users_repo.get_stats()
     return {
         "status": "healthy",
         "service": "fce-bot",
-        "version": "2.0.0",
-        "database": stats
+        "version": "2.0.0"
     }
 
 

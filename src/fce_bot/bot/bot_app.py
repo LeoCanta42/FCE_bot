@@ -10,7 +10,13 @@ from telegram.ext import (
     filters,
 )
 from fce_bot.config import settings
-from fce_bot.bot.handlers.start import start_command, help_command, chat_id_command
+from fce_bot.bot.handlers.start import (
+    start_command,
+    help_command,
+    chat_id_command,
+    privacy_command,
+    cancella_command,
+)
 from fce_bot.bot.handlers.timetable import (
     viaggio_command,
     fermate_command,
@@ -42,6 +48,9 @@ def create_bot_application() -> Application:
     app.add_handler(CommandHandler("news", news_command))
     app.add_handler(CommandHandler("documenti", documents_command))
     app.add_handler(CommandHandler("chat_id", chat_id_command))
+    app.add_handler(CommandHandler("privacy", privacy_command))
+    app.add_handler(CommandHandler("cancella", cancella_command))
+    app.add_handler(CommandHandler("stop", cancella_command))
 
     # Admin commands
     app.add_handler(CommandHandler("stats", stats_command))

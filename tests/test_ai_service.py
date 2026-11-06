@@ -33,3 +33,19 @@ def test_ai_answer_query():
     assert resp.destination is not None
     assert resp.itineraries_count > 0
     assert "randazzo" in resp.answer.lower()
+
+
+def test_ai_ticket_query():
+    """Verify ticket purchase inquiry returns clean text without markdown link artifacts."""
+    resp = ai_service.answer_query("Dove posso acquistare i biglietti FCE?")
+    assert len(resp.answer) > 20
+    # Should not contain raw markdown link brackets like [Orari Metro](http...)
+    assert "](" not in resp.answer
+    assert "bigliett" in resp.answer.lower()
+
+
+def test_ai_documents_clean_answer():
+    """Verify document request advises consulting official schedules without dumping raw URLs."""
+    resp = ai_service.answer_query("Vorrei scaricare la tabella PDF degli orari")
+    assert "](" not in resp.answer
+    assert "orari" in resp.answer.lower()

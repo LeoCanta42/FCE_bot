@@ -15,10 +15,14 @@ logger = logging.getLogger(__name__)
 
 
 SYSTEM_PROMPT = """Sei l'assistente virtuale ufficiale della Ferrovia Circumetnea (FCE) e Metropolitana di Catania.
-Il tuo compito è aiutare i viaggiatori a pianificare i loro spostamenti, indicando gli orari corretti, le fermate di partenza e arrivo, i cambi necessari e i documenti utili.
-Rispondi sempre in italiano, in modo cordiale, chiaro e conciso.
-Basa le tue risposte ESCLUSIVAMENTE sui dati ufficiali forniti nel contesto. Se un percorso o un orario non è disponibile, dillo con chiarezza e suggerisci un'alternativa se possibile.
-Usa emoji di trasporto appropriate (🚌 bus, 🚆 treno, 🚇 metro, ⏱ durata, 📍 partenza, 🏁 arrivo).
+Il tuo compito è aiutare i viaggiatori a pianificare i loro spostamenti, indicando gli orari corretti, le fermate di partenza e arrivo e le informazioni su biglietti e linee.
+REGOLE FONDAMENTALI DI RISPOSTA:
+1. Rispondi sempre in lingua italiana, in modo cordiale, chiaro e naturale.
+2. NON usare link markdown grezzi come [titolo](url) e non inserire URL completi o sintassi con parentesi quadre/tonde.
+3. Se l'utente chiede informazioni su orari completi o documenti, dì semplicemente: "Puoi consultare e scaricare gli orari aggiornati ufficiali nella sezione dedicata in questa pagina o sul sito circumetnea.it".
+4. Per i biglietti, indica che si possono acquistare nelle stazioni, alle emettitrici automatiche della metropolitana, nelle rivendite autorizzate (tabaccherie/edicole) e online tramite l'app ufficiale FCE o DropTicket.
+5. Evita sintassi markdown complessa o asterischi multipli sparsi.
+6. Basa le indicazioni di viaggio esclusivamente sui dati ufficiali indicati nel contesto.
 """
 
 
@@ -188,43 +192,55 @@ class AIService:
         itineraries: list,
         docs: Any
     ) -> str:
-        """Fallback response generator when no external AI key is available."""
-        # Check for general document or timetable request
+        """Fallback response generator providing clean text without broken markdown."""
         q_low = user_question.lower()
+
+        # 1. Documents / PDF query
         if any(w in q_low for w in ["documenti", "pdf", "scarica", "tabella orari", "orario metro", "orario treni", "orario bus"]):
             return (
-                "Ecco i link ufficiali per consultare e scaricare gli orari in formato PDF:\n\n"
-                f"🚇 *Orario Metropolitana:*\n{docs.metro_url}\n\n"
-                f"🚆 *Orario Treni Circumetnea (Superficie):*\n{docs.train_url}\n\n"
-                f"🚌 *Orario Autolinee (Bus):*\n{docs.bus_url}\n\n"
-                "Puoi anche chiedermi uno spostamento specifico, ad esempio: `da Catania a Randazzo alle 10:00`!"
+                "Puoi consultare e scaricare gli orari aggiornati ufficiali di Metropolitana, Treni di superficie e Autolinee Bus direttamente nella sezione 'Orari Ufficiali in PDF' in fondo alla pagina.\n\n"
+                "Se desideri cercare una corsa specifica, puoi anche indicarmi la partenza, la destinazione e l'orario desiderato!"
             )
 
+        # 2. Tickets query
+        if any(w in q_low for w in ["bigliett", "ticket", "abbonament", "compra", "acquist", "tariffe", "costo"]):
+            return (
+                "I biglietti e gli abbonamenti della Ferrovia Circumetnea e della Metropolitana di Catania sono acquistabili:\n\n"
+                "• Presso le biglietterie di stazione e le rivendite autorizzate (tabacchi ed edicole convenzionate).\n"
+                "• Alle emettitrici automatiche attive in tutte le stazioni della metropolitana.\n"
+                "• Tramite smartphone con l'app ufficiale FCE Catania o l'app DropTicket.\n"
+                "• A bordo per le corse dei bus extraurbani (ove previsto).\n\n"
+                "Puoi consultare e scaricare gli orari aggiornati ufficiali nella sezione dedicata in questa pagina."
+            )
+
+        # 3. No route query
         if not origin or not destination:
             return (
-                "👋 Ciao! Sono l'assistente per la mobilità della **Ferrovia Circumetnea**.\n\n"
-                "Puoi chiedermi orari e percorsi semplicemente scrivendo ad esempio:\n"
-                "• _Come vado da Catania a Bronte verso le 14:00?_\n"
-                "• _Orario treni da Randazzo a Paternò_\n"
-                "• _Metro da Monte Po a Stesicoro alle 09:30_\n\n"
-                "Dimmi pure: da dove vuoi partire e dove devi arrivare?"
+                "👋 Ciao! Sono l'assistente per la mobilità della Ferrovia Circumetnea e Metropolitana di Catania.\n\n"
+                "Puoi chiedermi orari e percorsi scrivendo ad esempio:\n"
+                "• Come vado da Catania a Bronte verso le 14:00?\n"
+                "• Orari dei treni da Randazzo a Paternò\n"
+                "• Metro da Monte Po a Stesicoro alle 09:30\n\n"
+                "Dimmi pure: da dove vuoi partire e dove desideri arrivare?"
             )
 
+        # 4. Route not found
         if not itineraries:
             return (
-                f"Non ho trovato corse dirette o con cambio immediato da *{origin}* a *{destination}* a partire dalle ore *{target_time}*.\n\n"
-                "💡 *Suggerimenti:*\n"
-                "• Prova a specificare un orario diverso o controlla l'esatto nome della fermata (es. `Catania Borgo`, `Nesima`, `Paternò`).\n"
-                "• Consulta i documenti ufficiali con il comando /documenti."
+                f"Non ho trovato corse dirette o con cambio immediato da {origin} a {destination} a partire dalle ore {target_time}.\n\n"
+                "Suggerimenti:\n"
+                "• Prova a modificare l'orario o verifica il nome esatto della fermata.\n"
+                "• Puoi consultare e scaricare gli orari aggiornati ufficiali nella sezione dedicata in questa pagina."
             )
 
+        # 5. Itineraries found
         lines = [
-            f"✅ Ho trovato {len(itineraries)} soluzioni da *{origin}* a *{destination}* a partire dalle *{target_time}*:\n"
+            f"Ho trovato {len(itineraries)} soluzioni da {origin} a {destination} a partire dalle ore {target_time}:\n"
         ]
         for idx, it in enumerate(itineraries[:4], 1):
-            lines.append(f"{idx}. {it.format_telegram()}")
+            lines.append(f"{idx}. {it.format_clean()}")
 
-        lines.append("Puoi acquistare i biglietti urbani online tramite l'app ufficiale FCE o DropTicket. Buon viaggio!")
+        lines.append("\nPuoi consultare e scaricare gli orari aggiornati ufficiali nella sezione 'Orari Ufficiali in PDF' in questa pagina.")
         return "\n".join(lines)
 
     def _call_gemini(
@@ -241,28 +257,28 @@ class AIService:
         if not api_key:
             return None
 
-        # Build schedule context
+        # Build clean schedule context without Telegram asterisks
         schedule_ctx = ""
         if itineraries:
             schedule_ctx = "ORARI TROVATI DAL DATABASE GTFS:\n"
             for it in itineraries:
-                schedule_ctx += it.format_telegram() + "\n"
+                schedule_ctx += it.format_clean() + "\n"
         else:
             schedule_ctx = "Nessuna corsa trovata dal database per i criteri specificati."
 
-        prompt = f"""Domanda dell'utente: "{question}"
+        prompt = f"""Domanda del passeggero: "{question}"
 Origine individuata: {origin or 'Non specificata'}
 Destinazione individuata: {destination or 'Non specificata'}
-Orario desiderato: {target_time}
+Orario di riferimento: {target_time}
 
 {schedule_ctx}
 
-DOCUMENTI UFFICIALI PDF DISPONIBILI:
-- Metro: {docs.metro_url}
-- Treni: {docs.train_url}
-- Bus: {docs.bus_url}
-
-Rispondi all'utente in modo chiaro, utile e conciso con tutte le informazioni rilevanti."""
+Linee guida per la risposta:
+- Rispondi in italiano con tono cordiale, chiaro e conciso.
+- NON inserire URL completi, link markdown grezzi come [testo](url), né sintassi con parentesi quadre/tonde.
+- Se opportuno, puoi ricordare che il passeggero può consultare e scaricare gli orari aggiornati ufficiali nella sezione dedicata in questa pagina.
+- Se l'utente chiede dove acquistare biglietti, spiega che sono acquistabili presso le stazioni, le rivendite autorizzate, le emettitrici automatiche della metro e online tramite app FCE o DropTicket.
+"""
 
         model = settings.GEMINI_MODEL or "gemini-3.5-flash-lite"
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
